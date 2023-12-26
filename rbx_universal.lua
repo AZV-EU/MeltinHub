@@ -85,7 +85,7 @@ do -- Flight
 		end
 	end
 	
-	ContextActionService:BindAction("unifly_bind", function() if _G.RBX_UNIVERSAL.Flying then _G.RBX_UNIVERSAL:StopFlight() else _G.RBX_UNIVERSAL:StartFlight() end, true, Enum.KeyCode.LeftControl)
+	ContextActionService:BindAction("unifly_bind", function() if _G.RBX_UNIVERSAL.Flying then _G.RBX_UNIVERSAL:StopFlight() else _G.RBX_UNIVERSAL:StartFlight() end end, true, Enum.KeyCode.LeftControl)
 end
 
 function _G.RBX_UNIVERSAL.Shutdown()
