@@ -5,7 +5,7 @@ if _G.RBX_UNIVERSAL ~= nil then
 	end
 end
 
-print("Starting RBX_UNIVERSAL 1.2")
+print("Starting RBX_UNIVERSAL 1.3")
 _G.RBX_UNIVERSAL = {}
 
 repeat task.wait() until game.Players.LocalPlayer ~= nil
