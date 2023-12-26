@@ -5,7 +5,7 @@ if _G.RBX_UNIVERSAL ~= nil then
 	end
 end
 
-print("Starting RBX_UNIVERSAL 1.4")
+print("Starting RBX_UNIVERSAL 1.5")
 _G.RBX_UNIVERSAL = {}
 
 repeat task.wait() until game.Players.LocalPlayer ~= nil
@@ -36,7 +36,7 @@ do -- Flight
 		
 		_G.RBX_UNIVERSAL.Flying = true
 		
-		local FlyPos = Vector3.zero
+		local FlyPos = root.CFrame.Position
 		local FlyShift = Vector3.zero
 		
 		local speed = _G.RBX_UNIVERSAL.FlySpeed
