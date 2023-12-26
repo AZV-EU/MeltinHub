@@ -5,7 +5,7 @@ if _G.RBX_UNIVERSAL ~= nil then
 	end
 end
 
-print("Starting RBX_UNIVERSAL 1.2.0")
+print("Starting RBX_UNIVERSAL 1.3.0")
 _G.RBX_UNIVERSAL = {}
 
 repeat task.wait() until game.Players.LocalPlayer ~= nil
@@ -36,8 +36,13 @@ do -- Flight
 		
 		_G.RBX_UNIVERSAL.Flying = true
 		
-		local FlyPos, FlyCF = root.CFrame.Position, root.CFrame
+		local FlyPos = root.CFrame.Position
 		local FlyShift = Vector3.zero
+		
+		local ControlModule
+		if plr:FindFirstChild("PlayerScripts") and plr.PlayerScripts:FindFirstChild("PlayerModule") and plr.PlayerScripts.PlayerModule:FindFirstChild("ControlModule") then
+			ControlModule = require(plr.PlayerScripts.PlayerModule.ControlModule)
+		end
 		
 		local speed = _G.RBX_UNIVERSAL.FlySpeed
 		RunService:BindToRenderStep("unifly", Enum.RenderPriority.Camera.Value - 1, function(dt)
@@ -52,28 +57,31 @@ do -- Flight
 			speed = UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) and 100 or _G.RBX_UNIVERSAL.FlySpeed
 			FlyShift = Vector3.zero
 			
-			if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-				FlyShift += Vector3.new(0, 0, -speed)
-			end
-			if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-				FlyShift += Vector3.new(0, 0, speed)
-			end
-			if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-				FlyShift += Vector3.new(-speed, 0, 0)
-			end
-			if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-				FlyShift += Vector3.new(speed, 0, 0)
-			end
-			if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-				FlyShift += Vector3.new(0, speed, 0)
-			end
-			if UserInputService:IsKeyDown(Enum.KeyCode.C) then
-				FlyShift += Vector3.new(0, -speed, 0)
+			if ControlModule then
+				FlyShift = ControlModule:GetMoveVector()
+			else
+				if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+					FlyShift += Vector3.new(0, 0, -speed)
+				end
+				if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+					FlyShift += Vector3.new(0, 0, speed)
+				end
+				if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+					FlyShift += Vector3.new(-speed, 0, 0)
+				end
+				if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+					FlyShift += Vector3.new(speed, 0, 0)
+				end
+				if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+					FlyShift += Vector3.new(0, speed, 0)
+				end
+				if UserInputService:IsKeyDown(Enum.KeyCode.C) then
+					FlyShift += Vector3.new(0, -speed, 0)
+				end
 			end
 			
-			FlyCF = CFrame.new(FlyPos, FlyPos + game.Workspace.CurrentCamera.CFrame.LookVector) * CFrame.new(FlyShift * dt)
-			FlyPos = FlyCF.Position
-			root.CFrame = FlyCF
+			FlyPos = (CFrame.new(FlyPos, FlyPos + game.Workspace.CurrentCamera.CFrame.LookVector) * CFrame.new(FlyShift * dt)).Position
+			root.CFrame = CFrame.new(FlyPos, FlyPos + game.Workspace.CurrentCamera.CFrame.LookVector)
 		end)
 	end
 	
@@ -87,7 +95,7 @@ do -- Flight
 		end
 	end
 	
-	function _G.RBX_UNIVERSAL.ToggleFlight(_, inputState)
+	function _G.RBX_UNIVERSAL:ToggleFlight(_, inputState)
 		if inputState == Enum.UserInputState.Begin then
 			if _G.RBX_UNIVERSAL.Flying then
 				_G.RBX_UNIVERSAL:StopFlight()
