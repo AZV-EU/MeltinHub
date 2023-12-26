@@ -5,7 +5,7 @@ if _G.RBX_UNIVERSAL ~= nil then
 	end
 end
 
-print("Starting RBX_UNIVERSAL 1.1")
+print("Starting RBX_UNIVERSAL 1.2")
 _G.RBX_UNIVERSAL = {}
 
 repeat task.wait() until game.Players.LocalPlayer ~= nil
@@ -71,8 +71,8 @@ do -- Flight
 				FlyShift += Vector3.new(0, -speed, 0)
 			end
 			
-			FlyPos += (FlyShift * dt)
-			root.CFrame = CFrame.new(FlyPos, FlyPos + (game.Workspace.CurrentCamera.CFrame.LookVector * 10))
+			FlyPos = (CFrame.new(FlyPos, FlyPos + game.Workspace.CurrentCamera.CFrame.LookVector) * FlyShift).Position
+			root.CFrame = CFrame.new(FlyPos, FlyPos + (game.Workspace.CurrentCamera.CFrame.LookVector))
 		end)
 	end
 	
