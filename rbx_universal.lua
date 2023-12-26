@@ -5,7 +5,7 @@ if _G.RBX_UNIVERSAL ~= nil then
 	end
 end
 
-print("Starting RBX_UNIVERSAL 1.4.0")
+print("Starting RBX_UNIVERSAL 1.4.1")
 _G.RBX_UNIVERSAL = {}
 
 repeat task.wait() until game.Players.LocalPlayer ~= nil
@@ -58,7 +58,7 @@ do -- Flight
 			FlyShift = Vector3.zero
 			
 			if ControlModule then
-				FlyShift = ControlModule:GetMoveVector()
+				FlyShift = ControlModule:GetMoveVector() * speed
 			else
 				if UserInputService:IsKeyDown(Enum.KeyCode.W) then
 					FlyShift += Vector3.new(0, 0, -speed)
