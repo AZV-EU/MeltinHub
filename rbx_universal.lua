@@ -5,7 +5,7 @@ if _G.RBX_UNIVERSAL ~= nil then
 	end
 end
 
-print("Starting RBX_UNIVERSAL 1.4.1")
+print("Starting RBX_UNIVERSAL 1.5")
 _G.RBX_UNIVERSAL = {}
 
 repeat task.wait() until game.Players.LocalPlayer ~= nil
@@ -60,24 +60,13 @@ do -- Flight
 			if ControlModule then
 				FlyShift = ControlModule:GetMoveVector() * speed
 			else
-				if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-					FlyShift += Vector3.new(0, 0, -speed)
-				end
-				if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-					FlyShift += Vector3.new(0, 0, speed)
-				end
-				if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-					FlyShift += Vector3.new(-speed, 0, 0)
-				end
-				if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-					FlyShift += Vector3.new(speed, 0, 0)
-				end
-				if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-					FlyShift += Vector3.new(0, speed, 0)
-				end
-				if UserInputService:IsKeyDown(Enum.KeyCode.C) then
-					FlyShift += Vector3.new(0, -speed, 0)
-				end
+				FlyShift = human.MoveDirection
+			end
+			if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+				FlyShift += Vector3.new(0, speed, 0)
+			end
+			if UserInputService:IsKeyDown(Enum.KeyCode.C) then
+				FlyShift += Vector3.new(0, -speed, 0)
 			end
 			
 			FlyPos = (CFrame.new(FlyPos, FlyPos + game.Workspace.CurrentCamera.CFrame.LookVector) * CFrame.new(FlyShift * dt)).Position
@@ -108,9 +97,73 @@ do -- Flight
 	ContextActionService:BindAction("unifly_bind", _G.RBX_UNIVERSAL.ToggleFlight, true, Enum.KeyCode.LeftControl)
 end
 
+local espEnabled = true
+do -- simple ESP
+	function _G.RBX_UNIVERSAL:GetTeam(target)
+		if target:IsA("Player") then
+			return target.Team == plr.Team and 1 or -1
+		else
+			return 0
+		end
+	end
+	
+	local teams = game.Workspace:FindFirstChild("ESP_MODEL") or Instance.new("Model", game.Workspace)
+	teams.Name = "ESP_MODEL"
+	
+	local enemies = teams:FindFirstChild("Enemies") or Instance.new("Model", teams)
+	enemies.Name = "Enemies"
+	local enemiesHighlight = enemies:FindFirstChild("Highlight") or Instance.new("Highlight", enemies)
+	enemiesHighlight.FillColor = Color3.new(1, 0, 0)
+	
+	local friends = teams:FindFirstChild("Friends") or Instance.new("Model", teams)
+	friends.Name = "Friends"
+	local friendsHighlight = friends:FindFirstChild("Highlight") or Instance.new("Highlight", friends)
+	friendsHighlight.FillColor = Color3.new(0, 1, 0)
+	
+	local neutral = teams:FindFirstChild("Enemies") or Instance.new("Model", teams)
+	neutral.Name = "Enemies"
+	local neutralHighlight = neutral:FindFirstChild("Highlight") or Instance.new("Highlight", neutral)
+	neutralHighlight.FillColor = Color3.new(1, 1, 1)
+	
+	task.spawn(function()
+		local teamid
+		while task.wait(5) and espEnabled do
+			for _,human in pairs(game.Workspace:GetDescendants()) do
+				if human:IsA("Humanoid") and human.Parent and human.RootPart and human.Parent:IsA("Model") then
+					teamid = _G.RBX_UNIVERSAL:GetTeam(game.Players:GetPlayerFromCharacter(human.Parent) or human.Parent)
+					if teamid == 1 then
+						human.Parent.Parent = friends
+					elseif teamid == -1 then
+						human.Parent.Parent = enemies
+					else
+						human.Parent.Parent = neutral
+					end
+				end
+			end
+		end
+	end)
+end
+
+local antiAfkFunc
+do -- anti afk
+	local VU = game:GetService("VirtualUser")
+	
+	antiAfkFunc = plr.Idled:Connect(function()
+		VU:CaptureController()
+		VU:ClickButton2(Vector2.zero)
+	end)
+end
+
 function _G.RBX_UNIVERSAL.Shutdown()
 	print("RBX_UNIVERSAL Shutting down")
 	
 	_G.RBX_UNIVERSAL:StopFlight()
 	ContextActionService:UnbindAction("unifly_bind")
+	
+	if antiAfkFunc then
+		antiAfkFunc:Disconnect()
+	end
+	
+	_G.RBX_UNIVERSAL = nil
+	espEnabled = false
 end
