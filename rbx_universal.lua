@@ -40,7 +40,7 @@ do -- Flight
 		local FlyShift = Vector3.zero
 		
 		local speed = _G.RBX_UNIVERSAL.FlySpeed
-		RunService:BindToRenderStep("unifly", Enum.RenderPriority.Camera - 1, function(dt)
+		RunService:BindToRenderStep("unifly", Enum.RenderPriority.Camera.Value - 1, function(dt)
 			if not human or not human.Parent or human.Health <= 0 or not game.Workspace.CurrentCamera then
 				_G.RBX_UNIVERSAL:StopFlight()
 				return
