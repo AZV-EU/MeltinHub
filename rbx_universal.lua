@@ -5,7 +5,7 @@ if _G.RBX_UNIVERSAL ~= nil then
 	end
 end
 
-print("Starting RBX_UNIVERSAL 1.5")
+print("Starting RBX_UNIVERSAL 1.5.1")
 _G.RBX_UNIVERSAL = {}
 
 repeat task.wait() until game.Players.LocalPlayer ~= nil
@@ -126,17 +126,18 @@ do -- simple ESP
 	neutralHighlight.FillColor = Color3.new(1, 1, 1)
 	
 	task.spawn(function()
-		local teamid
+		local target, teamid
 		while task.wait(5) and espEnabled do
-			for _,human in pairs(game.Workspace:GetDescendants()) do
-				if human:IsA("Humanoid") and human.Parent and human.RootPart and human.Parent:IsA("Model") then
-					teamid = _G.RBX_UNIVERSAL:GetTeam(game.Players:GetPlayerFromCharacter(human.Parent) or human.Parent)
+			for _,player in pairs(game.Players:GetPlayers()) do
+				target = player.Character
+				if target ~= plr then
+					teamid = _G.RBX_UNIVERSAL:GetTeam(target)
 					if teamid == 1 then
-						human.Parent.Parent = friends
+						target.Parent = friends
 					elseif teamid == -1 then
-						human.Parent.Parent = enemies
+						target.Parent = enemies
 					else
-						human.Parent.Parent = neutral
+						target.Parent = neutral
 					end
 				end
 			end
