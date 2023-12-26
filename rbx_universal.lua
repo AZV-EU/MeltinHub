@@ -71,7 +71,7 @@ do -- Flight
 				FlyShift += Vector3.new(0, -speed, 0)
 			end
 			
-			FlyPos = (CFrame.new(FlyPos, FlyPos + game.Workspace.CurrentCamera.CFrame.LookVector) * FlyShift).Position
+			FlyPos = (CFrame.new(FlyPos, FlyPos + game.Workspace.CurrentCamera.CFrame.LookVector) * CFrame.new(FlyShift * dt)).Position
 			root.CFrame = CFrame.new(FlyPos, FlyPos + (game.Workspace.CurrentCamera.CFrame.LookVector))
 		end)
 	end
