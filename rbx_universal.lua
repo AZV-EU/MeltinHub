@@ -5,7 +5,7 @@ if _G.RBX_UNIVERSAL ~= nil then
 	end
 end
 
-print("Starting RBX_UNIVERSAL 1.3.0")
+print("Starting RBX_UNIVERSAL 1.4.0")
 _G.RBX_UNIVERSAL = {}
 
 repeat task.wait() until game.Players.LocalPlayer ~= nil
@@ -95,7 +95,7 @@ do -- Flight
 		end
 	end
 	
-	function _G.RBX_UNIVERSAL:ToggleFlight(_, inputState)
+	function _G.RBX_UNIVERSAL.ToggleFlight(_, inputState)
 		if inputState == Enum.UserInputState.Begin then
 			if _G.RBX_UNIVERSAL.Flying then
 				_G.RBX_UNIVERSAL:StopFlight()
