@@ -1,5 +1,8 @@
-if _G.RBX_UNIVERSAL then
-	_G.RBX_UNIVERSAL:Shutdown()
+if _G.RBX_UNIVERSAL ~= nil then
+	local f, err = pcall(_G.RBX_UNIVERSAL.Shutdown)
+	if not f then
+		warn(err)
+	end
 end
 
 print("Starting RBX_UNIVERSAL")
@@ -85,11 +88,9 @@ do -- Flight
 	ContextActionService:BindAction("unifly_bind", function() if _G.RBX_UNIVERSAL.Flying then _G.RBX_UNIVERSAL:StopFlight() else _G.RBX_UNIVERSAL:StartFlight() end, true, Enum.KeyCode.LeftControl)
 end
 
-function _G.RBX_UNIVERSAL:Shutdown()
+function _G.RBX_UNIVERSAL.Shutdown()
 	print("RBX_UNIVERSAL Shutting down")
 	
 	_G.RBX_UNIVERSAL:StopFlight()
 	ContextActionService:UnbindAction("unifly_bind")
-	
-	_G.RBX_UNIVERSAL:Shutdown()
 end
