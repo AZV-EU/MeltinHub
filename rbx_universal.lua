@@ -5,7 +5,7 @@ if _G.RBX_UNIVERSAL ~= nil then
 	end
 end
 
-print("Starting RBX_UNIVERSAL 1.5.1")
+print("Starting RBX_UNIVERSAL 1.5.2")
 _G.RBX_UNIVERSAL = {}
 
 repeat task.wait() until game.Players.LocalPlayer ~= nil
@@ -131,7 +131,7 @@ do -- simple ESP
 			for _,player in pairs(game.Players:GetPlayers()) do
 				target = player.Character
 				if target ~= plr then
-					teamid = _G.RBX_UNIVERSAL:GetTeam(target)
+					teamid = _G.RBX_UNIVERSAL:GetTeam(player)
 					if teamid == 1 then
 						target.Parent = friends
 					elseif teamid == -1 then
