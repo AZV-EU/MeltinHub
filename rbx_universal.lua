@@ -36,7 +36,7 @@ do -- Flight
 		
 		_G.RBX_UNIVERSAL.Flying = true
 		
-		local FlyPos = game.Workspace.CurrentCamera.CFrame
+		local FlyPos = Vector3.zero
 		local FlyShift = Vector3.zero
 		
 		local speed = _G.RBX_UNIVERSAL.FlySpeed
