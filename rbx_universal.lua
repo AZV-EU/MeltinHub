@@ -82,6 +82,7 @@ do -- Flight
 			local human = _G.RBX_UNIVERSAL:GetMyHumanoid()
 			--human.PlatformStand = false
 			--human:ChangeState(
+			_G.RBX_UNIVERSAL.Flying = false
 		end
 	end
 	
