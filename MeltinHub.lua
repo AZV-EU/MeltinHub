@@ -1,4 +1,5 @@
-local plr = game.Players.LocalPlayer
+local Version = "1.6"
+local BaseUrl = "https://raw.githubusercontent.com/Senzaa/MeltinHub/main/"
 
 -- loadstring(game:HttpGet("https://raw.githubusercontent.com/Senzaa/MeltinHub/main/MeltinHub.lua", true))()
 
@@ -7,6 +8,9 @@ local plr = game.Players.LocalPlayer
 
 -- Dex Bypasses
 --loadstring(game:HttpGet("https://raw.githubusercontent.com/Babyhamsta/RBLX_Scripts/main/Universal/Bypasses.lua", true))()
+
+-- Common anti-cheats bypass
+loadstring(game:HttpGet(BaseUrl .. "AnticheatBypass.lua", true))()
 
 if not cloneref then
 	warn("no cloneref implementation found, severe performance hindering")
@@ -19,8 +23,7 @@ end
 
 print("Meltinhub init 1.0 for game id:", game.GameId)
 
-local Version = "1.5a"
-local BaseUrl = "https://raw.githubusercontent.com/Senzaa/MeltinHub/main/"
+local plr = _G.SafeGetService("Players").LocalPlayer
 
 _G.NUKE_KICKATTEMPTS = false
 
@@ -70,7 +73,6 @@ local repository = {
 }
 
 --setclipboard(tostring(game.GameId))
---print(game.GameId)
 
 local blacklisted = {
 	[2142948266] = {
@@ -79,7 +81,7 @@ local blacklisted = {
 	}
 }
 
-_G.AIMBOT_DebugMode = true
+_G.AIMBOT_DebugMode = false
 
 _G.ESPModule_DontParent = {
 	[3647333358] = true,
@@ -93,8 +95,6 @@ _G.COLOR3DEF = {
 	GREEN = Color3.new(0, 1, 0),
 	BLUE = Color3.new(0, 0, 1)
 }
-
-local VUService = _G.SafeGetService("VirtualUser")
 
 function _G.Notify(text, title)
 	game.StarterGui:SetCore("SendNotification", {
@@ -549,6 +549,7 @@ task.spawn(function() -- anti-lag
 	end
 end)]]
 
+local VUService = _G.SafeGetService("VirtualUser")
 table.insert(connections, plr.Idled:Connect(function()
 	VUService:ClickButton1(Vector2.new(0, 0), game.Workspace.CurrentCamera.CFrame)
 end))
