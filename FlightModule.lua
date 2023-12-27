@@ -166,7 +166,7 @@ function module.SetEnabled(state)
 							moveShift += Vector3.new(0, speed, 0)
 						end
 						
-						targetPos = (CFrame.new(targetPos, targetPos + cam.LookVector) * CFrame.new(moveShift * dt)).Position
+						targetPos = (CFrame.new(targetPos, targetPos + cam.CFrame.LookVector) * CFrame.new(moveShift * dt)).Position
 						
 						root.CFrame = CFrame.new(targetPos, targetPos + cam.CFrame.LookVector)
 						
