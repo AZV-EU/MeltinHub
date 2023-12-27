@@ -147,7 +147,7 @@ function module.SetEnabled(state)
 					ControlModule = require(plr.PlayerScripts.PlayerModule.ControlModule)
 				end
 				
-				RunService:BindToRenderStep("flight", Enum.RenderPriority.Camera.Value - 1, function(deltaTime)
+				RunService:BindToRenderStep("flight", Enum.RenderPriority.Camera.Value - 1, function(dt)
 					cam = game.Workspace.CurrentCamera
 					root = myHuman.RootPart
 					if root ~= nil then

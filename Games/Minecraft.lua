@@ -1,6 +1,6 @@
 local module = {
 	GameName = "Minecraft",
-	ModuleVersion = "1.0"
+	ModuleVersion = "1.1"
 }
 
 function module.PreInit()
@@ -36,6 +36,11 @@ local MainLocalScript = plr:WaitForChild("PlayerScripts"):WaitForChild("MainLoca
 local CWorld = require(MainLocalScript:WaitForChild("CWorld"))
 
 local GameRemotes = game.ReplicatedStorage:WaitForChild("GameRemotes")
+
+local DemoRemote = GameRemotes:FindFirstChild("Demo")
+if DemoRemote then
+	_G.MethodEmulator:SetMethodOverride(DemoRemote, "InvokeServer", function() end)
+end
 local Blocks = game.Workspace:WaitForChild("Blocks")
 local Fluids = game.Workspace:WaitForChild("Fluid")
 
@@ -144,6 +149,23 @@ function module.Init(category, connections)
 		end
 	end))
 	
+	if DemoRemote then
+		local superMode = category:AddCheckbox("Super-Mode")
+		superMode:SetChecked(true)
+		
+		local function SetupSuperMode(chr)
+			local human = chr:WaitForChild("Humanoid")
+			table.insert(connections, human.HealthChanged:Connect(function()
+				DemoRemote:InvokeServer(-human.MaxHealth, "fall")
+			end))
+		end
+		table.insert(connections, plr.CharacterAdded:Connect(SetupSuperMode))
+		repeat task.wait() until plr.Character
+		SetupSuperMode(plr.Character)
+	else
+		warn("No demo-remote, can't setup super-mode!")
+	end
+		
 	local xray = category:AddCheckbox("X-Ray", setXray)
 	coroutine.resume(coroutine.create(function()
 		while moduleOn and wait(5) do
@@ -151,6 +173,7 @@ function module.Init(category, connections)
 		end
 	end))
 	
+	--[[
 	local massMine
 	massMine = category:AddButton("Mass-Mine", function()
 		massMine.Enabled = false
@@ -198,7 +221,7 @@ function module.Init(category, connections)
 		massMine.Enabled = true
 		massMine.Text = "Mass-Mine"
 		_G.SenHub:Update()
-	end)
+	end)]]
 end
 
 function module.Shutdown()

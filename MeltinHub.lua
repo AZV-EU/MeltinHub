@@ -1,4 +1,4 @@
-local Version = "1.6.2"
+local Version = "1.6.3"
 local BaseUrl = "https://raw.githubusercontent.com/Senzaa/MeltinHub/main/"
 
 -- loadstring(game:HttpGet("https://raw.githubusercontent.com/Senzaa/MeltinHub/main/MeltinHub.lua", true))()
@@ -69,7 +69,8 @@ local repository = {
 	[1001911915] = "FarmingAndFriends.lua",
 	[4986566693] = "AnimeChampions.lua",
 	[1802741133] = "CabinCrewSimulator.lua",
-	[5219307126] = "Minecraft.lua"
+	[5219307126] = "Minecraft.lua",
+	[4383005988] = "Minecraft.lua"
 }
 
 --setclipboard(tostring(game.GameId))
@@ -932,6 +933,7 @@ end
 if repository[game.GameId] then
 	gameModule = loadCoreModule(BaseUrl .. "Games/" .. repository[game.GameId])
 	if gameModule and gameModule.Init then
+		print("Initializing Game Module v" .. tostring(gameModule.ModuleVersion or "1.0"))
 		local category = _G.SenHub:AddCategory(_G.GAMEINFO.Name)
 		task.spawn(function()
 			repeat task.wait() until game:IsLoaded()
