@@ -1,4 +1,4 @@
-local Version = "1.6.3"
+local Version = "1.6.4"
 local BaseUrl = "https://raw.githubusercontent.com/Senzaa/MeltinHub/main/"
 
 -- loadstring(game:HttpGet("https://raw.githubusercontent.com/Senzaa/MeltinHub/main/MeltinHub.lua", true))()
@@ -21,7 +21,7 @@ function _G.SafeGetService(service)
     return cloneref(game:GetService(service))
 end
 
-print("MeltinHub " .. Version .. "Starting for Game ID =", game.GameId)
+print("MeltinHub " .. Version .. ", Game ID =", game.GameId)
 
 local plr = _G.SafeGetService("Players").LocalPlayer
 

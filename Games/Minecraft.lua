@@ -1,6 +1,6 @@
 local module = {
 	GameName = "Minecraft",
-	ModuleVersion = "1.1"
+	ModuleVersion = "1.2"
 }
 
 function module.PreInit()
@@ -25,98 +25,97 @@ function module.PreInit()
 	]]
 end
 
-local plr = game.Players.LocalPlayer
-if not plr then return module end
-
-plr:WaitForChild("PlayerGui"):WaitForChild("GamePass Shop Gui").Enabled = false
-
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local MainLocalScript = plr:WaitForChild("PlayerScripts"):WaitForChild("MainLocalScript")
-local CWorld = require(MainLocalScript:WaitForChild("CWorld"))
-
-local GameRemotes = game.ReplicatedStorage:WaitForChild("GameRemotes")
-
-local DemoRemote = GameRemotes:FindFirstChild("Demo")
-if DemoRemote then
-	_G.MethodEmulator:SetMethodOverride(DemoRemote, "InvokeServer", function() end)
-end
-local Blocks = game.Workspace:WaitForChild("Blocks")
-local Fluids = game.Workspace:WaitForChild("Fluid")
-
-local AssetsMod = game.ReplicatedStorage:WaitForChild("AssetsMod")
-local _blockInfo = require(AssetsMod:WaitForChild("BlockInfo"));
-local _itemInfo = require(AssetsMod:WaitForChild("ItemInfo"));
-local _ItemLevels = require(AssetsMod:WaitForChild("ItemLevels"))
-local _IDs = require(AssetsMod:WaitForChild("IDs"))
-
-local BlocksData = _IDs.ByName.Blocks
-
-local Remotes = {
-	Attack = GameRemotes:WaitForChild("Attack"),
-	ChangeSlot = GameRemotes:WaitForChild("ChangeSlot"),
-	BreakBlock = GameRemotes:WaitForChild("BreakBlock"),
-	AcceptBreakBlock = GameRemotes:WaitForChild("AcceptBreakBlock"),
-	UseBlock = GameRemotes:WaitForChild("UseBlock")
-}
-
-local Constants = {
-	PlayerReachBlocks = 5.5,
-	BlockSize = 3
-}
-Constants.PlayerReach = Constants.PlayerReachBlocks * Constants.BlockSize - 1
-
 local moduleOn = true
 
-local function ToRegionPos(worldPos)
-	return Vector3.new(
-		math.floor(worldPos.X / Constants.BlockSize + 0.5),
-		math.floor(worldPos.Y / Constants.BlockSize + 0.5),
-		math.floor(worldPos.Z / Constants.BlockSize + 0.5)
-	)
-end
+function module.Init(category, connections)
+	local plr = game.Players.LocalPlayer
 
-local function FindBlockUnderMouse()
-	local msPos = Vector2.new(game.Workspace.CurrentCamera.ViewportSize.X / 2, game.Workspace.CurrentCamera.ViewportSize.Y / 2 - 36)
-	local ray = game.Workspace.CurrentCamera:ScreenPointToRay(msPos.X, msPos.Y, 0)
-	local raycastParams = RaycastParams.new()
-	raycastParams.FilterDescendantsInstances = { Blocks }
-	raycastParams.FilterType = Enum.RaycastFilterType.Whitelist
-	local result = game.Workspace:Raycast(ray.Origin, ray.Unit.Direction * 999, raycastParams);
-	if result then
-		local dist = (result.Position - workspace.CurrentCamera.CFrame.Position).Magnitude
-		if dist < Constants.PlayerReach then
-			local cf = CFrame.new(result.Position, result.Position + ray.Unit.Direction)
-			local pos = ToRegionPos(cf.Position + cf.LookVector / 64)
-			return pos
-		end
+	plr:WaitForChild("PlayerGui"):WaitForChild("GamePass Shop Gui").Enabled = false
+
+	local RunService = game:GetService("RunService")
+	local UserInputService = game:GetService("UserInputService")
+	local MainLocalScript = plr:WaitForChild("PlayerScripts"):WaitForChild("MainLocalScript")
+	local CWorld = require(MainLocalScript:WaitForChild("CWorld"))
+
+	local GameRemotes = game.ReplicatedStorage:WaitForChild("GameRemotes")
+
+	local DemoRemote = GameRemotes:FindFirstChild("Demo")
+	if DemoRemote then
+		_G.MethodEmulator:SetMethodOverride(DemoRemote, "InvokeServer", function() end)
 	end
-end
+	local Blocks = game.Workspace:WaitForChild("Blocks")
+	local Fluids = game.Workspace:WaitForChild("Fluid")
 
-local function setXray(state)
-	for _, region in pairs(Blocks:GetChildren()) do
-		for _, block in pairs(region:GetChildren()) do
-			if block:FindFirstChild("BoxHandleAdornment") then
-				if block.Name == "SapphireOre" then
-					block.BoxHandleAdornment.Visible = true
-				else
-					block.BoxHandleAdornment.Visible = state
-				end
-			elseif block.Name == "SapphireOre" then
-				local bha = Instance.new("BoxHandleAdornment", block)
-				bha.Adornee = block
-				bha.AlwaysOnTop = true
-				bha.Color3 = Color3.fromRGB(29, 29, 211)
-				bha.Size = Vector3.new(3, 3, 3)
-				bha.Transparency = 0.7
-				bha.ZIndex = 10
-				bha.Visible = true
+	local AssetsMod = game.ReplicatedStorage:WaitForChild("AssetsMod")
+	local _blockInfo = require(AssetsMod:WaitForChild("BlockInfo"));
+	local _itemInfo = require(AssetsMod:WaitForChild("ItemInfo"));
+	local _ItemLevels = require(AssetsMod:WaitForChild("ItemLevels"))
+	local _IDs = require(AssetsMod:WaitForChild("IDs"))
+
+	local BlocksData = _IDs.ByName.Blocks
+
+	local Remotes = {
+		Attack = GameRemotes:WaitForChild("Attack"),
+		ChangeSlot = GameRemotes:WaitForChild("ChangeSlot"),
+		BreakBlock = GameRemotes:WaitForChild("BreakBlock"),
+		AcceptBreakBlock = GameRemotes:WaitForChild("AcceptBreakBlock"),
+		UseBlock = GameRemotes:WaitForChild("UseBlock")
+	}
+
+	local Constants = {
+		PlayerReachBlocks = 5.5,
+		BlockSize = 3
+	}
+	Constants.PlayerReach = Constants.PlayerReachBlocks * Constants.BlockSize - 1
+
+	local function ToRegionPos(worldPos)
+		return Vector3.new(
+			math.floor(worldPos.X / Constants.BlockSize + 0.5),
+			math.floor(worldPos.Y / Constants.BlockSize + 0.5),
+			math.floor(worldPos.Z / Constants.BlockSize + 0.5)
+		)
+	end
+
+	local function FindBlockUnderMouse()
+		local msPos = Vector2.new(game.Workspace.CurrentCamera.ViewportSize.X / 2, game.Workspace.CurrentCamera.ViewportSize.Y / 2 - 36)
+		local ray = game.Workspace.CurrentCamera:ScreenPointToRay(msPos.X, msPos.Y, 0)
+		local raycastParams = RaycastParams.new()
+		raycastParams.FilterDescendantsInstances = { Blocks }
+		raycastParams.FilterType = Enum.RaycastFilterType.Whitelist
+		local result = game.Workspace:Raycast(ray.Origin, ray.Unit.Direction * 999, raycastParams);
+		if result then
+			local dist = (result.Position - workspace.CurrentCamera.CFrame.Position).Magnitude
+			if dist < Constants.PlayerReach then
+				local cf = CFrame.new(result.Position, result.Position + ray.Unit.Direction)
+				local pos = ToRegionPos(cf.Position + cf.LookVector / 64)
+				return pos
 			end
 		end
 	end
-end
 
-function module.Init(category, connections)
+	local function setXray(state)
+		for _, region in pairs(Blocks:GetChildren()) do
+			for _, block in pairs(region:GetChildren()) do
+				if block:FindFirstChild("BoxHandleAdornment") then
+					if block.Name == "SapphireOre" then
+						block.BoxHandleAdornment.Visible = true
+					else
+						block.BoxHandleAdornment.Visible = state
+					end
+				elseif block.Name == "SapphireOre" then
+					local bha = Instance.new("BoxHandleAdornment", block)
+					bha.Adornee = block
+					bha.AlwaysOnTop = true
+					bha.Color3 = Color3.fromRGB(29, 29, 211)
+					bha.Size = Vector3.new(3, 3, 3)
+					bha.Transparency = 0.7
+					bha.ZIndex = 10
+					bha.Visible = true
+				end
+			end
+		end
+	end
+
 	local autoAttack = category:AddCheckbox("Auto-Attack")
 	autoAttack.Inline = true
 	local lastAttack = tick()
