@@ -1,6 +1,6 @@
 local plr = game.Players.LocalPlayer
 
--- loadstring(game:HttpGet(BaseUrl .. "MeltinHub.lua", true))()
+-- loadstring(game:HttpGet("https://raw.githubusercontent.com/Senzaa/MeltinHub/MeltinHub.lua", true))()
 
 -- Cloneref support (adds support for JJsploit/Temple/Electron and other sploits that don't have cloneref or really shit versions of it.)
 --loadstring(game:HttpGet("https://raw.githubusercontent.com/Babyhamsta/RBLX_Scripts/main/Universal/CloneRef.lua", true))()
@@ -919,7 +919,7 @@ do -- 								OTHER CATEGORY
 		end
 	end)
 	otherCategory:AddButton("Restart MeltinHub", function()
-		loadstring(game:HttpGet(BaseUrl .. "MeltinHub.lua", true))()
+		loadstring(game:HttpGet("https://raw.githubusercontent.com/Senzaa/MeltinHub/MeltinHub.lua", true))()
 	end)
 	if setfpscap then
 		local fpsUnlock = otherCategory:AddCheckbox("FPS Unlock", function(state)
