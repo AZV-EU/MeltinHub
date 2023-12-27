@@ -141,56 +141,45 @@ function module.SetEnabled(state)
 			if flying and myHuman ~= nil and myHuman.RootPart ~= nil and myHuman.RootPart.Parent ~= nil then
 				local root = myHuman.RootPart
 				targetPos = root.Position
+				
+				local ControlModule
+				if plr:FindFirstChild("PlayerScripts") and plr.PlayerScripts:FindFirstChild("PlayerModule") and plr.PlayerScripts.PlayerModule:FindFirstChild("ControlModule") then
+					ControlModule = require(plr.PlayerScripts.PlayerModule.ControlModule)
+				end
+				
 				RunService:BindToRenderStep("flight", Enum.RenderPriority.Camera.Value - 1, function(deltaTime)
 					cam = game.Workspace.CurrentCamera
 					root = myHuman.RootPart
 					if root ~= nil then
-						root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-						root.AssemblyAngularVelocity= Vector3.new(0, 0, 0)
-						moveShift = Vector3.new()
-						speed = UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) and module.BoostSpeed or normalSpeed --[[(
-							UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) and slowSpeed or normalSpeed
-						)]]
-						if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-							moveShift = moveShift + Vector3.new(0, 0, -1)
-						end
-						if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-							moveShift = moveShift + Vector3.new(0, 0, 1)
-						end
-						if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-							moveShift = moveShift + Vector3.new(-1, 0, 0)
-						end
-						if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-							moveShift = moveShift + Vector3.new(1, 0, 0)
+						root.AssemblyLinearVelocity  = Vector3.zero
+						root.AssemblyAngularVelocity = Vector3.zero
+						moveShift = Vector3.zero
+						
+						speed = UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) and module.BoostSpeed or normalSpeed
+						
+						if ControlModule then
+							moveShift = ControlModule:GetMoveVector() * speed
+						else
+							moveShift = human.MoveDirection * speed
 						end
 						if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-							moveShift = moveShift + Vector3.new(0, 1, 0)
+							moveShift += Vector3.new(0, speed, 0)
 						end
-						--[[
-						if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
-							moveShift = moveShift + Vector3.new(0, -1, 0)
-						end
-						]]
 						
-						targetPos = (CFrame.new(targetPos, targetPos + (cam.Focus.Position - cam.CFrame.Position).Unit) * CFrame.new(moveShift * (speed * deltaTime))).Position
+						targetPos = (CFrame.new(targetPos, targetPos + cam.LookVector) * CFrame.new(moveShift * dt)).Position
+						
+						root.CFrame = CFrame.new(targetPos, targetPos + cam.CFrame.LookVector)
 						
 						if module.Fling then
 							for k,v in pairs(plr.Character:GetChildren()) do
 								if v:IsA("BasePart") then
 									v.CanCollide = false
-									v.AssemblyLinearVelocity  = Vector3.new(0, 0, 0)
-									v.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+									v.AssemblyLinearVelocity  = Vector3.zero
+									v.AssemblyAngularVelocity = Vector3.zero
 								end
 							end
-						else
-							for k,v in pairs(plr.Character:GetChildren()) do
-								if v:IsA("BasePart") then
-									v.AssemblyLinearVelocity  = Vector3.new(0, 0, 0)
-									v.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-								end
-							end
+							root.CFrame = CFrame.new(targetPos, targetPos + cam.CFrame.LookVector)
 						end
-						root.CFrame = CFrame.new(targetPos, targetPos + (cam.Focus.Position - cam.CFrame.Position).Unit)
 					end
 				end)
 			else
@@ -216,6 +205,5 @@ function module.SetEnabled(state)
 		if respawnConn ~= nil then respawnConn:Disconnect() end
 	end
 end
-
 
 return module
