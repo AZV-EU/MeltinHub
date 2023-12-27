@@ -69,7 +69,7 @@ local repository = {
 	[1001911915] = "FarmingAndFriends.lua",
 	[4986566693] = "AnimeChampions.lua",
 	[1802741133] = "CabinCrewSimulator.lua",
-	[4383005988] = "Minecraft.lua"
+	[5219307126] = "Minecraft.lua"
 }
 
 --setclipboard(tostring(game.GameId))
