@@ -1,6 +1,6 @@
 local module = {
 	GameName = "Minecraft",
-	ModuleVersion = "1.3"
+	ModuleVersion = "1.4"
 }
 
 function module.PreInit()
@@ -42,6 +42,8 @@ function module.Init(category, connections)
 	local DemoRemote = GameRemotes:FindFirstChild("Demo")
 	if DemoRemote then
 		_G.MethodEmulator:SetMethodOverride(DemoRemote, "FireServer", function() end)
+	else
+		warn("Couldn't implement anti-fall damage: no Demo remote")
 	end
 	local Blocks = game.Workspace:WaitForChild("Blocks")
 	local Fluids = game.Workspace:WaitForChild("Fluid")
@@ -149,9 +151,6 @@ function module.Init(category, connections)
 	end))
 	
 	if DemoRemote then
-		local superMode = category:AddCheckbox("Super-Mode")
-		superMode:SetChecked(true)
-		
 		local function SetupSuperMode(chr)
 			local human = chr:WaitForChild("Humanoid")
 			table.insert(connections, human.HealthChanged:Connect(function()
