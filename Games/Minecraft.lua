@@ -1,6 +1,6 @@
 local module = {
 	GameName = "Minecraft",
-	ModuleVersion = "1.2"
+	ModuleVersion = "1.3"
 }
 
 function module.PreInit()
