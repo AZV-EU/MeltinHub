@@ -1,6 +1,6 @@
 local plr = game.Players.LocalPlayer
 
--- loadstring(game:HttpGet("http://azv.ddns.net/RobloxScripts/MeltinHub.lua", true))()
+-- loadstring(game:HttpGet(BaseUrl .. "MeltinHub.lua", true))()
 
 -- Cloneref support (adds support for JJsploit/Temple/Electron and other sploits that don't have cloneref or really shit versions of it.)
 --loadstring(game:HttpGet("https://raw.githubusercontent.com/Babyhamsta/RBLX_Scripts/main/Universal/CloneRef.lua", true))()
@@ -20,6 +20,9 @@ end
 print("Meltinhub init 1.0 for game id:", game.GameId)
 
 local Version = "1.5a"
+local BaseUrl = "https://raw.githubusercontent.com/Senzaa/MeltinHub/"
+
+_G.NUKE_KICKATTEMPTS = false
 
 local repository = {
 	[1903935756] = "Lucky-Block-Tycoon.lua",
@@ -414,7 +417,8 @@ end
 _G.GAMEINFO = _G.SafeGetService("MarketplaceService"):GetProductInfo(game.PlaceId)
 
 if repository[game.GameId] then
-	gameModule = loadCoreModule("http://azv.ddns.net/RobloxScripts/Games/" .. repository[game.GameId], repository[game.GameId])
+	
+	gameModule = loadCoreModule(BaseUrl .. "Games/" .. repository[game.GameId], repository[game.GameId])
 	if gameModule and gameModule.PreInit then
 		local result, err = pcall(gameModule.PreInit)
 		if not result then
@@ -434,22 +438,21 @@ if not plr then
 	until plr ~= nil
 end
 
-local mg = loadCoreModule("http://azv.ddns.net/RobloxScripts/MeltinGui.lua", "MeltinGui")
+local mg = loadCoreModule(BaseUrl .. "MeltinGui.lua", "MeltinGui")
 if not mg then warn("Could not load meltingui") return end
 
 if not _G.IndexEmulatorLoaded then
-	_G.IndexEmulator = loadCoreModule("http://azv.ddns.net/RobloxScripts/IndexEmulator.lua", "Index Emulator")
+	_G.IndexEmulator = loadCoreModule(BaseUrl .. "IndexEmulator.lua", "Index Emulator")
 	if not _G.IndexEmulator then warn("Could not load index emulator") return end
 	_G.IndexEmulatorLoaded = true -- uncomment for release, comment for debugging
 end
 
 if not _G.MethodEmulatorLoaded then
-	_G.MethodEmulator = loadCoreModule("http://azv.ddns.net/RobloxScripts/MethodEmulator.lua", "Method Emulator")
+	_G.MethodEmulator = loadCoreModule(BaseUrl .. "MethodEmulator.lua", "Method Emulator")
 	if not _G.MethodEmulator then warn("Could not load method emulator") return end
 	_G.MethodEmulatorLoaded = true -- uncomment for release, comment for debugging
 end
 
-_G.NUKE_KICKATTEMPTS = false
 _G.MethodEmulator:SetMethodOverride(plr, "Kick", function(self, hook, message)
 	warn("Intercepted kick attempt.")
 	print("Kick message:", message)
@@ -459,27 +462,27 @@ _G.MethodEmulator:SetMethodOverride(plr, "Kick", function(self, hook, message)
 end)
 
 if not _G.MouseEmulatorLoaded then
-	_G.MouseEmulator = loadCoreModule("http://azv.ddns.net/RobloxScripts/MouseEmulator.lua", "Mouse Emulator")
+	_G.MouseEmulator = loadCoreModule(BaseUrl .. "MouseEmulator.lua", "Mouse Emulator")
 	if not _G.MouseEmulator then warn("Could not load mouse emulator") return end
 	_G.MouseEmulatorLoaded = true -- uncomment for release, comment for debugging
 end
 
 if not _G.KeyboardEmulatorLoaded then
-	_G.KeyboardEmulator = loadCoreModule("http://azv.ddns.net/RobloxScripts/KeyboardEmulator.lua", "Keyboard Emulator")
+	_G.KeyboardEmulator = loadCoreModule(BaseUrl .. "KeyboardEmulator.lua", "Keyboard Emulator")
 	if not _G.KeyboardEmulator then warn("Could not load keyboard emulator") return end
 	_G.KeyboardEmulatorLoaded = true
 end
 
---_G.Autopilot = loadCoreModule("http://azv.ddns.net/RobloxScripts/Autopilot.lua", "Autopilot")
+--_G.Autopilot = loadCoreModule(BaseUrl .. "Autopilot.lua", "Autopilot")
 --if not _G.Autopilot then warn("Could not load autopilot") return end
 
-local aimbotModule = loadCoreModule("http://azv.ddns.net/RobloxScripts/AimbotModule.lua", "Aimbot Module")
+local aimbotModule = loadCoreModule(BaseUrl .. "AimbotModule.lua", "Aimbot Module")
 if not aimbotModule then warn("Could not load aimbot module") return end
 
-local espModule = loadCoreModule("http://azv.ddns.net/RobloxScripts/ESPModule_3.lua", "ESP Module")
+local espModule = loadCoreModule(BaseUrl .. "ESPModule_3.lua", "ESP Module")
 if not espModule then warn("Could not load esp module") return end
 
-local flightModule = loadCoreModule("http://azv.ddns.net/RobloxScripts/FlightModule.lua", "Flight Module")
+local flightModule = loadCoreModule(BaseUrl .. "FlightModule.lua", "Flight Module")
 if not flightModule then warn("Could not load flight module") return end
 
 local UserInputService = _G.SafeGetService("UserInputService")
@@ -557,7 +560,7 @@ local blacklistOptions = blacklisted[game.GameId] or {}
 plr.CameraMaxZoomDistance = 1000
 
 --[[if UserInputService.TouchEnabled then
-	loadCoreModule("http://azv.ddns.net/RobloxScripts/AndroidPatches.lua", "AndroidPatches")
+	loadCoreModule(BaseUrl .. "AndroidPatches.lua", "AndroidPatches")
 end]]
 
 do -- 								CHARACTER CATEGORY
@@ -916,7 +919,7 @@ do -- 								OTHER CATEGORY
 		end
 	end)
 	otherCategory:AddButton("Restart MeltinHub", function()
-		loadstring(game:HttpGet("http://azv.ddns.net/RobloxScripts/MeltinHub.lua", true))()
+		loadstring(game:HttpGet(BaseUrl .. "MeltinHub.lua", true))()
 	end)
 	if setfpscap then
 		local fpsUnlock = otherCategory:AddCheckbox("FPS Unlock", function(state)
@@ -927,7 +930,7 @@ do -- 								OTHER CATEGORY
 end
 
 if repository[game.GameId] then
-	gameModule = loadCoreModule("http://azv.ddns.net/RobloxScripts/Games/" .. repository[game.GameId])
+	gameModule = loadCoreModule(BaseUrl .. "Games/" .. repository[game.GameId])
 	if gameModule and gameModule.Init then
 		local category = _G.SenHub:AddCategory(_G.GAMEINFO.Name)
 		task.spawn(function()
