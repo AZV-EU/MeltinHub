@@ -1,0 +1,164 @@
+Sakuro [unique 1] x1                          	DMG/cast: 3681	CD: 0.0	DMG/s/cast: 0	Total DMG/s: 0
+Speedcart [unique 1] x1                       	DMG/cast: 1	CD: 1.0	DMG/s/cast: 1	Total DMG/s: 1
+Bulmy [unique 1] x1                           	DMG/cast: 1	CD: 1.0	DMG/s/cast: 1	Total DMG/s: 1
+Urakara [unique 1] x1                         	DMG/cast: 1030	CD: 4.5	DMG/s/cast: 229	Total DMG/s: 229
+Usoap [unique 1] x1                           	DMG/cast: 312	CD: 1.4	DMG/s/cast: 231	Total DMG/s: 231
+Dezu [unique 1] x1                            	DMG/cast: 1288	CD: 5.4	DMG/s/cast: 238	Total DMG/s: 238
+Sosuke [unique 1] x1                          	DMG/cast: 1288	CD: 4.5	DMG/s/cast: 286	Total DMG/s: 286
+Bakujo [unique 1] x1                          	DMG/cast: 1288	CD: 4.5	DMG/s/cast: 286	Total DMG/s: 286
+Vegita [unique 1] x1                          	DMG/cast: 1840	CD: 5.4	DMG/s/cast: 340	Total DMG/s: 340
+Noruto [unique 1] x1                          	DMG/cast: 938	CD: 2.7	DMG/s/cast: 347	Total DMG/s: 347
+Johna [unique 1] x1                           	DMG/cast: 1288	CD: 3.6	DMG/s/cast: 357	Total DMG/s: 357
+Krillo [unique 1] x1                          	DMG/cast: 994	CD: 2.7	DMG/s/cast: 368	Total DMG/s: 368
+Nezuka [unique 1] x1                          	DMG/cast: 1840	CD: 5.0	DMG/s/cast: 371	Total DMG/s: 371
+Piccoru [unique 1] x1                         	DMG/cast: 2208	CD: 5.4	DMG/s/cast: 409	Total DMG/s: 409
+Ichi (Masked) [unique 1] x1                   	DMG/cast: 1104	CD: 2.7	DMG/s/cast: 409	Total DMG/s: 409
+Josuka [unique 1] x1                          	DMG/cast: 1840	CD: 4.0	DMG/s/cast: 454	Total DMG/s: 454
+Aman [unique 1] x1                            	DMG/cast: 2208	CD: 4.5	DMG/s/cast: 490	Total DMG/s: 490
+Zoru [unique 1] x1                            	DMG/cast: 920	CD: 1.8	DMG/s/cast: 511	Total DMG/s: 511
+Kazashu [unique 1] x1                         	DMG/cast: 2024	CD: 3.6	DMG/s/cast: 562	Total DMG/s: 562
+Underhaul [unique 1] x1                       	DMG/cast: 2945	CD: 4.0	DMG/s/cast: 727	Total DMG/s: 727
+Freezo (Final) [unique 1] x1                  	DMG/cast: 4602	CD: 6.3	DMG/s/cast: 730	Total DMG/s: 730
+Tanji [unique 1] x1                           	DMG/cast: 2024	CD: 2.7	DMG/s/cast: 749	Total DMG/s: 749
+Zennu [unique 1] x1                           	DMG/cast: 2761	CD: 3.6	DMG/s/cast: 767	Total DMG/s: 767
+Kizzua [unique 1] x1                          	DMG/cast: 3129	CD: 4.0	DMG/s/cast: 772	Total DMG/s: 772
+Karyoin [unique 1] x1                         	DMG/cast: 2945	CD: 3.6	DMG/s/cast: 818	Total DMG/s: 818
+Goko [unique 1] x1                            	DMG/cast: 2393	CD: 2.7	DMG/s/cast: 886	Total DMG/s: 886
+Sanjay [unique 1] x1                          	DMG/cast: 3313	CD: 3.6	DMG/s/cast: 920	Total DMG/s: 920
+Kazeki [unique 1] x1                          	DMG/cast: 3313	CD: 3.6	DMG/s/cast: 920	Total DMG/s: 920
+Erein [unique 1] x1                           	DMG/cast: 13806	CD: 13.5	DMG/s/cast: 1022	Total DMG/s: 1022
+Todorro [unique 1] x1                         	DMG/cast: 3681	CD: 3.6	DMG/s/cast: 1022	Total DMG/s: 1022
+Gaaro [unique 1] x1                           	DMG/cast: 3313	CD: 3.1	DMG/s/cast: 1051	Total DMG/s: 1051
+Geno [unique 1] x1                            	DMG/cast: 2208	CD: 1.8	DMG/s/cast: 1227	Total DMG/s: 1227
+Bakayua [unique 1] x1                         	DMG/cast: 4417	CD: 3.6	DMG/s/cast: 1227	Total DMG/s: 1227
+Luffo (Marine's Ford) [unique 1] x1           	DMG/cast: 5522	CD: 4.5	DMG/s/cast: 1227	Total DMG/s: 1227
+Inosoku [unique 1] x1                         	DMG/cast: 3865	CD: 3.1	DMG/s/cast: 1227	Total DMG/s: 1227
+JIO [unique 1] x1                             	DMG/cast: 14726	CD: 11.7	DMG/s/cast: 1258	Total DMG/s: 1258
+Croc [unique 1] x1                            	DMG/cast: 7363	CD: 5.4	DMG/s/cast: 1363	Total DMG/s: 1363
+Mecha Freezo [unique 1] x1                    	DMG/cast: 9204	CD: 6.3	DMG/s/cast: 1460	Total DMG/s: 1460
+Luffo [unique 1] x1                           	DMG/cast: 4049	CD: 2.7	DMG/s/cast: 1499	Total DMG/s: 1499
+Ichi [unique 1] x1                            	DMG/cast: 3681	CD: 2.2	DMG/s/cast: 1636	Total DMG/s: 1636
+Cel (Imperfect) [unique 1] x1                 	DMG/cast: 9204	CD: 5.4	DMG/s/cast: 1704	Total DMG/s: 1704
+Ruki [unique 1] x1                            	DMG/cast: 18408	CD: 10.8	DMG/s/cast: 1704	Total DMG/s: 1704
+Agony [unique 1] x1                           	DMG/cast: 11044	CD: 5.4	DMG/s/cast: 2045	Total DMG/s: 2045
+Zeike [unique 1] x1                           	DMG/cast: 14726	CD: 7.2	DMG/s/cast: 2045	Total DMG/s: 2045
+Mivawk [unique 1] x1                          	DMG/cast: 9204	CD: 4.5	DMG/s/cast: 2045	Total DMG/s: 2045
+Blackhair [unique 1] x1                       	DMG/cast: 9204	CD: 4.5	DMG/s/cast: 2045	Total DMG/s: 2045
+Dabo [unique 1] x1                            	DMG/cast: 14726	CD: 6.3	DMG/s/cast: 2337	Total DMG/s: 2337
+Noruto (Demon Cloak) [unique 1] x1            	DMG/cast: 13806	CD: 5.0	DMG/s/cast: 2789	Total DMG/s: 2789
+Goko Blue [unique 1] x1                       	DMG/cast: 18408	CD: 6.3	DMG/s/cast: 2921	Total DMG/s: 2921
+Jokujo [unique 1] x1                          	DMG/cast: 6626	CD: 2.2	DMG/s/cast: 2945	Total DMG/s: 2945
+Lulu [unique 1] x1                            	DMG/cast: 14726	CD: 5.0	DMG/s/cast: 2975	Total DMG/s: 2975
+Kazoru [unique 1] x1                          	DMG/cast: 11044	CD: 3.6	DMG/s/cast: 3068	Total DMG/s: 3068
+Norro [unique 1] x1                           	DMG/cast: 22089	CD: 7.2	DMG/s/cast: 3068	Total DMG/s: 3068
+Goko Black [unique 1] x1                      	DMG/cast: 11044	CD: 3.6	DMG/s/cast: 3068	Total DMG/s: 3068
+Lao [unique 1] x1                             	DMG/cast: 9204	CD: 2.7	DMG/s/cast: 3408	Total DMG/s: 3408
+Kazeki (Centipede) [unique 1] x1              	DMG/cast: 18408	CD: 5.4	DMG/s/cast: 3408	Total DMG/s: 3408
+Grim Jaw [unique 1] x1                        	DMG/cast: 18408	CD: 5.4	DMG/s/cast: 3408	Total DMG/s: 3408
+Touci [unique 1] x1                           	DMG/cast: 13806	CD: 4.0	DMG/s/cast: 3408	Total DMG/s: 3408
+Jiorno [unique 1] x1                          	DMG/cast: 14726	CD: 4.0	DMG/s/cast: 3636	Total DMG/s: 3636
+Itochi [unique 1] x1                          	DMG/cast: 14726	CD: 4.0	DMG/s/cast: 3636	Total DMG/s: 3636
+Lulu (Geass) [unique 1] x1                    	DMG/cast: 18408	CD: 5.0	DMG/s/cast: 3718	Total DMG/s: 3718
+Mochi [unique 1] x1                           	DMG/cast: 22089	CD: 5.9	DMG/s/cast: 3776	Total DMG/s: 3776
+Brulo [unique 1] x1                           	DMG/cast: 42338	CD: 10.8	DMG/s/cast: 3920	Total DMG/s: 3920
+Hisova [unique 1] x1                          	DMG/cast: 22089	CD: 5.4	DMG/s/cast: 4090	Total DMG/s: 4090
+Togu [unique 1] x1                            	DMG/cast: 44179	CD: 10.8	DMG/s/cast: 4090	Total DMG/s: 4090
+Akano [unique 1] x1                           	DMG/cast: 55224	CD: 13.5	DMG/s/cast: 4090	Total DMG/s: 4090
+Juozu [unique 1] x1                           	DMG/cast: 27612	CD: 6.3	DMG/s/cast: 4382	Total DMG/s: 4382
+Nobaba [unique 1] x1                          	DMG/cast: 23930	CD: 5.4	DMG/s/cast: 4431	Total DMG/s: 4431
+Orwin [unique 1] x1                           	DMG/cast: 40497	CD: 9.0	DMG/s/cast: 4499	Total DMG/s: 4499
+Armein [unique 1] x1                          	DMG/cast: 276121	CD: 60.0	DMG/s/cast: 4602	Total DMG/s: 4602
+Marada [unique 1] x1                          	DMG/cast: 64428	CD: 13.5	DMG/s/cast: 4772	Total DMG/s: 4772
+Fire Fist [unique 1] x1                       	DMG/cast: 22089	CD: 4.5	DMG/s/cast: 4908	Total DMG/s: 4908
+Ichi (Full Hollow) [unique 1] x1              	DMG/cast: 22089	CD: 4.5	DMG/s/cast: 4908	Total DMG/s: 4908
+Akoku [unique 1] x1                           	DMG/cast: 27612	CD: 5.4	DMG/s/cast: 5113	Total DMG/s: 5113
+Renzi [unique 1] x1                           	DMG/cast: 25771	CD: 5.0	DMG/s/cast: 5206	Total DMG/s: 5206
+Gone [unique 1] x1                            	DMG/cast: 23930	CD: 4.5	DMG/s/cast: 5317	Total DMG/s: 5317
+Red Scar [unique 1] x1                        	DMG/cast: 25771	CD: 4.5	DMG/s/cast: 5726	Total DMG/s: 5726
+Renkoko [unique 1] x1                         	DMG/cast: 31293	CD: 5.4	DMG/s/cast: 5795	Total DMG/s: 5795
+Gajule [unique 1] x1                          	DMG/cast: 29453	CD: 5.0	DMG/s/cast: 5950	Total DMG/s: 5950
+Legendary Brulo [unique 1] x1                 	DMG/cast: 66154	CD: 10.8	DMG/s/cast: 6125	Total DMG/s: 6125
+Uru [unique 1] x1                             	DMG/cast: 22089	CD: 3.6	DMG/s/cast: 6136	Total DMG/s: 6136
+Ariva [unique 1] x1                           	DMG/cast: 33134	CD: 5.4	DMG/s/cast: 6136	Total DMG/s: 6136
+Tarata [unique 1] x1                          	DMG/cast: 33134	CD: 5.4	DMG/s/cast: 6136	Total DMG/s: 6136
+Blue Devil [unique 1] x1                      	DMG/cast: 36816	CD: 5.9	DMG/s/cast: 6293	Total DMG/s: 6293
+Mochi Charlot [unique 1] x1                   	DMG/cast: 36816	CD: 5.9	DMG/s/cast: 6293	Total DMG/s: 6293
+Chunks [unique 1] x1                          	DMG/cast: 36816	CD: 5.9	DMG/s/cast: 6293	Total DMG/s: 6293
+Juvy [unique 1] x1                            	DMG/cast: 29453	CD: 4.5	DMG/s/cast: 6545	Total DMG/s: 6545
+Fleet Admiral Akano [unique 1] x1             	DMG/cast: 95722	CD: 13.5	DMG/s/cast: 7090	Total DMG/s: 7090
+All Force [unique 1] x1                       	DMG/cast: 64428	CD: 9.0	DMG/s/cast: 7158	Total DMG/s: 7158
+Ezra [unique 1] x1                            	DMG/cast: 36816	CD: 5.0	DMG/s/cast: 7437	Total DMG/s: 7437
+Ezra (Random Equip) [unique 1] x1             	DMG/cast: 36816	CD: 5.0	DMG/s/cast: 7437	Total DMG/s: 7437
+Gray [unique 1] x1                            	DMG/cast: 80995	CD: 10.8	DMG/s/cast: 7499	Total DMG/s: 7499
+Tarata (Ignite) [unique 1] x1                 	DMG/cast: 40497	CD: 5.4	DMG/s/cast: 7499	Total DMG/s: 7499
+Cel (Semi-Perfect) [unique 1] x1              	DMG/cast: 40497	CD: 5.4	DMG/s/cast: 7499	Total DMG/s: 7499
+Marada (Founder) [unique 1] x1                	DMG/cast: 101612	CD: 13.5	DMG/s/cast: 7526	Total DMG/s: 7526
+Ulquiro [unique 1] x1                         	DMG/cast: 46388	CD: 5.9	DMG/s/cast: 7929	Total DMG/s: 7929
+Coyote [unique 1] x1                          	DMG/cast: 101244	CD: 12.6	DMG/s/cast: 8035	Total DMG/s: 8035
+Whitehair [unique 1] x1                       	DMG/cast: 77314	CD: 9.5	DMG/s/cast: 8181	Total DMG/s: 8181
+Future Guhon [unique 1] x1                    	DMG/cast: 44179	CD: 5.4	DMG/s/cast: 8181	Total DMG/s: 8181
+Levy [unique 1] x1                            	DMG/cast: 36816	CD: 4.5	DMG/s/cast: 8181	Total DMG/s: 8181
+Crush [unique 1] x1                           	DMG/cast: 92040	CD: 10.8	DMG/s/cast: 8522	Total DMG/s: 8522
+Kizzua (Whirlwind) [unique 1] x1              	DMG/cast: 36816	CD: 4.0	DMG/s/cast: 9090	Total DMG/s: 9090
+Kisoko [unique 1] x1                          	DMG/cast: 51542	CD: 5.4	DMG/s/cast: 9544	Total DMG/s: 9544
+Saicky [unique 1] x1                          	DMG/cast: 44179	CD: 4.5	DMG/s/cast: 9817	Total DMG/s: 9817
+Aizo [unique 1] x1                            	DMG/cast: 58906	CD: 5.9	DMG/s/cast: 10069	Total DMG/s: 10069
+Akoku (Destruction) [unique 1] x1             	DMG/cast: 55224	CD: 5.4	DMG/s/cast: 10226	Total DMG/s: 10226
+Gone (Adult) [unique 1] x1                    	DMG/cast: 138060	CD: 13.5	DMG/s/cast: 10226	Total DMG/s: 10226
+Diavoro [unique 1] x1                         	DMG/cast: 55224	CD: 5.4	DMG/s/cast: 10226	Total DMG/s: 10226
+Uru (Antithesis) [unique 1] x1                	DMG/cast: 32214	CD: 3.1	DMG/s/cast: 10226	Total DMG/s: 10226
+Natzo [unique 1] x1                           	DMG/cast: 60746	CD: 5.9	DMG/s/cast: 10384	Total DMG/s: 10384
+Renkoko (ABLAZE) [unique 1] x1                	DMG/cast: 57525	CD: 5.4	DMG/s/cast: 10652	Total DMG/s: 10652
+Gone (???) [unique 1] x1                      	DMG/cast: 248509	CD: 22.5	DMG/s/cast: 11044	Total DMG/s: 11044
+Noruto (Beast Cloak) [unique 1] x1            	DMG/cast: 49701	CD: 4.5	DMG/s/cast: 11044	Total DMG/s: 11044
+Luci [unique 1] x1                            	DMG/cast: 103085	CD: 9.0	DMG/s/cast: 11453	Total DMG/s: 11453
+Kit (Random Blessing) [unique 1] x1           	DMG/cast: 82836	CD: 7.2	DMG/s/cast: 11505	Total DMG/s: 11505
+Kit [unique 1] x1                             	DMG/cast: 82836	CD: 7.2	DMG/s/cast: 11505	Total DMG/s: 11505
+Goju [unique 1] x1                            	DMG/cast: 73632	CD: 6.3	DMG/s/cast: 11687	Total DMG/s: 11687
+Pito [unique 1] x1                            	DMG/cast: 58906	CD: 5.0	DMG/s/cast: 11900	Total DMG/s: 11900
+Juozu (Joker) [unique 1] x1                   	DMG/cast: 53843	CD: 4.5	DMG/s/cast: 11965	Total DMG/s: 11965
+Red Scar (Conqueror) [unique 1] x1            	DMG/cast: 55224	CD: 4.5	DMG/s/cast: 12272	Total DMG/s: 12272
+Eta [unique 1] x1                             	DMG/cast: 83756	CD: 6.3	DMG/s/cast: 13294	Total DMG/s: 13294
+Levy Ackman [unique 1] x1                     	DMG/cast: 59826	CD: 4.5	DMG/s/cast: 13294	Total DMG/s: 13294
+Eta (One-Eye) [unique 1] x1                   	DMG/cast: 121088	CD: 9.0	DMG/s/cast: 13454	Total DMG/s: 13454
+Emperor Whitehair [unique 1] x1               	DMG/cast: 122045	CD: 9.0	DMG/s/cast: 13560	Total DMG/s: 13560
+Megomu [unique 1] x1                          	DMG/cast: 73632	CD: 5.4	DMG/s/cast: 13635	Total DMG/s: 13635
+Cel (Perfect) [unique 1] x1                   	DMG/cast: 73632	CD: 5.4	DMG/s/cast: 13635	Total DMG/s: 13635
+Kit (Focus) [unique 1] x1                     	DMG/cast: 99403	CD: 7.2	DMG/s/cast: 13806	Total DMG/s: 13806
+Kit (Precision) [unique 1] x1                 	DMG/cast: 99403	CD: 7.2	DMG/s/cast: 13806	Total DMG/s: 13806
+Neteru [unique 1] x1                          	DMG/cast: 125175	CD: 9.0	DMG/s/cast: 13908	Total DMG/s: 13908
+Gray (Devil Slayer) [unique 1] x1             	DMG/cast: 151867	CD: 10.8	DMG/s/cast: 14061	Total DMG/s: 14061
+Meruam [unique 1] x1                          	DMG/cast: 66269	CD: 4.5	DMG/s/cast: 14726	Total DMG/s: 14726
+Itadoki [unique 1] x1                         	DMG/cast: 73632	CD: 5.0	DMG/s/cast: 14875	Total DMG/s: 14875
+Kent [unique 1] x1                            	DMG/cast: 80995	CD: 5.4	DMG/s/cast: 14999	Total DMG/s: 14999
+Jelly [unique 1] x1                           	DMG/cast: 77314	CD: 5.0	DMG/s/cast: 15619	Total DMG/s: 15619
+Ariva (Reaper) [unique 1] x1                  	DMG/cast: 84493	CD: 5.4	DMG/s/cast: 15646	Total DMG/s: 15646
+Aizo (Betrayal) [unique 1] x1                 	DMG/cast: 95722	CD: 5.9	DMG/s/cast: 16362	Total DMG/s: 16362
+All Force (Symbol of Peace) [unique 1] x1     	DMG/cast: 135299	CD: 8.1	DMG/s/cast: 16703	Total DMG/s: 16703
+Kisoko (Bankai) [unique 1] x1                 	DMG/cast: 92776	CD: 5.4	DMG/s/cast: 17180	Total DMG/s: 17180
+Kit (Lethal) [unique 1] x1                    	DMG/cast: 124254	CD: 7.2	DMG/s/cast: 17257	Total DMG/s: 17257
+Yuto [unique 1] x1                            	DMG/cast: 110448	CD: 6.3	DMG/s/cast: 17531	Total DMG/s: 17531
+Pito (Terpsichora) [unique 1] x1              	DMG/cast: 79523	CD: 4.5	DMG/s/cast: 17671	Total DMG/s: 17671
+Kit (Frenzy) [unique 1] x1                    	DMG/cast: 99403	CD: 5.4	DMG/s/cast: 18408	Total DMG/s: 18408
+Natzo (Lightning Dragon Mode) [unique 1] x1   	DMG/cast: 101888	CD: 5.4	DMG/s/cast: 18868	Total DMG/s: 18868
+Coyote (Primera) [unique 1] x1                	DMG/cast: 222738	CD: 11.7	DMG/s/cast: 19037	Total DMG/s: 19037
+King Meruam [unique 1] x1                     	DMG/cast: 86150	CD: 4.5	DMG/s/cast: 19144	Total DMG/s: 19144
+Kizzua (Godspeed) [unique 1] x1               	DMG/cast: 69030	CD: 3.6	DMG/s/cast: 19175	Total DMG/s: 19175
+Ulquiro (ResurrecciÃ³n) [unique 1] x1         	DMG/cast: 123702	CD: 6.3	DMG/s/cast: 19635	Total DMG/s: 19635
+Kent (Overtime) [unique 1] x1                 	DMG/cast: 110448	CD: 5.4	DMG/s/cast: 20453	Total DMG/s: 20453
+Chairman Neteru [unique 1] x1                 	DMG/cast: 188867	CD: 9.0	DMG/s/cast: 20985	Total DMG/s: 20985
+Megomu (Chimera Shadow) [unique 1] x1         	DMG/cast: 154628	CD: 7.2	DMG/s/cast: 21476	Total DMG/s: 21476
+Crush (Ace) [unique 1] x1                     	DMG/cast: 198807	CD: 9.0	DMG/s/cast: 22089	Total DMG/s: 22089
+Super Chunks [unique 1] x1                    	DMG/cast: 143583	CD: 6.3	DMG/s/cast: 22791	Total DMG/s: 22791
+Getu [unique 1] x1                            	DMG/cast: 121493	CD: 5.0	DMG/s/cast: 24544	Total DMG/s: 24544
+Ezra (Valkyrie) [unique 1] x1                 	DMG/cast: 203409	CD: 8.1	DMG/s/cast: 25112	Total DMG/s: 25112
+Jelly (Heaven) [unique 1] x1                  	DMG/cast: 203409	CD: 8.1	DMG/s/cast: 25112	Total DMG/s: 25112
+Ezra (True Heart) [unique 1] x1               	DMG/cast: 138060	CD: 5.4	DMG/s/cast: 25566	Total DMG/s: 25566
+Luci (Celestial) [unique 1] x1                	DMG/cast: 231942	CD: 9.0	DMG/s/cast: 25771	Total DMG/s: 25771
+Cel (SUPER PERFECT) [unique 1] x1             	DMG/cast: 143583	CD: 5.4	DMG/s/cast: 26589	Total DMG/s: 26589
+Sukuno [unique 1] x1                          	DMG/cast: 239305	CD: 9.0	DMG/s/cast: 26589	Total DMG/s: 26589
+Ezra (Lightning) [unique 1] x1                	DMG/cast: 176718	CD: 6.3	DMG/s/cast: 28050	Total DMG/s: 28050
+Getu (Maximum) [unique 1] x1                  	DMG/cast: 195862	CD: 6.8	DMG/s/cast: 29016	Total DMG/s: 29016
+Goju (Six Eyes) [unique 1] x1                 	DMG/cast: 193285	CD: 5.4	DMG/s/cast: 35793	Total DMG/s: 35793
+Yuto (Cursed Child) [unique 1] x1             	DMG/cast: 607468	CD: 16.2	DMG/s/cast: 37498	Total DMG/s: 37498
+Erein (Founder) [unique 1] x1                 	DMG/cast: 73632520	CD: 480.0	DMG/s/cast: 153401	Total DMG/s: 153401
