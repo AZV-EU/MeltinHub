@@ -395,7 +395,7 @@ end
 function loadCoreModule(address, moduleName)
 	local f, err = loadstring(game:HttpGet(address, true), "="..(moduleName or "Unknown module"))
 	if not f then
-		warn(err)
+		warn("Failed to load core module '" .. address .. "':\n" .. err)
 		return nil
 	end
 	return assert(f)()
@@ -417,7 +417,6 @@ end
 _G.GAMEINFO = _G.SafeGetService("MarketplaceService"):GetProductInfo(game.PlaceId)
 
 if repository[game.GameId] then
-	
 	gameModule = loadCoreModule(BaseUrl .. "Games/" .. repository[game.GameId], repository[game.GameId])
 	if gameModule and gameModule.PreInit then
 		local result, err = pcall(gameModule.PreInit)
