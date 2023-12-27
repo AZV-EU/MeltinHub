@@ -41,7 +41,7 @@ function module.Init(category, connections)
 
 	local DemoRemote = GameRemotes:FindFirstChild("Demo")
 	if DemoRemote then
-		_G.MethodEmulator:SetMethodOverride(DemoRemote, "InvokeServer", function() end)
+		_G.MethodEmulator:SetMethodOverride(DemoRemote, "FireServer", function() end)
 	end
 	local Blocks = game.Workspace:WaitForChild("Blocks")
 	local Fluids = game.Workspace:WaitForChild("Fluid")
@@ -155,7 +155,9 @@ function module.Init(category, connections)
 		local function SetupSuperMode(chr)
 			local human = chr:WaitForChild("Humanoid")
 			table.insert(connections, human.HealthChanged:Connect(function()
-				DemoRemote:InvokeServer(-human.MaxHealth, "fall")
+				if human.Health < human.MaxHealth then
+					DemoRemote:FireServer(-human.MaxHealth, "fall")
+				end
 			end))
 		end
 		table.insert(connections, plr.CharacterAdded:Connect(SetupSuperMode))
