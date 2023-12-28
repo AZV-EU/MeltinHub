@@ -1,4 +1,4 @@
-local Version = "1.6.5"
+local Version = "1.6.5b"
 local BaseUrl = "https://raw.githubusercontent.com/Senzaa/MeltinHub/main/"
 
 -- loadstring(game:HttpGet("https://raw.githubusercontent.com/Senzaa/MeltinHub/main/MeltinHub.lua", true))()

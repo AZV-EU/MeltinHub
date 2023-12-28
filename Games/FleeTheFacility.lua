@@ -1,12 +1,13 @@
 local module = {
 	GameName = "Flee the Facility",
-	ModuleVersion = "1.0"
+	ModuleVersion = "1.1"
 }
 
 local plr = game.Players.LocalPlayer
 local moduleOn = true
 
 function module.PreInit()
+	_G.IndexEmulator:SetKeyValue(_G.SafeGetService("UserInputService"), "TouchEnabled", false)
 end
 
 function module.Init(category, connections)
