@@ -3,19 +3,20 @@ local module = {
 	ModuleVersion = "1.0"
 }
 
-local plr = game.Players.LocalPlayer
-if not plr then return end
-local moduleOn = true
-
-local gameKeeper = game.Workspace:WaitForChild("GameKeeper")
-local map = gameKeeper:WaitForChild("Map")
-local puzzlesOrigin = gameKeeper:WaitForChild("Puzzles")
-
 function module.PreInit()
 	
 end
 
 function module.Init(category, connections)
+	local plr = game.Players.LocalPlayer
+	
+	local moduleOn = true
+
+	local gameKeeper = game.Workspace:WaitForChild("GameKeeper")
+	local map = gameKeeper:WaitForChild("Map")
+	local puzzles = gameKeeper:WaitForChild("Puzzles")
+	local items = map:FindFirstChild("Items")
+
 	_G.MeltinHub_ValidAllyCheck = function(target)
 		if target:IsA("Player") then
 			return target.Team == plr.Team
@@ -30,6 +31,7 @@ function module.Init(category, connections)
 	local autoCollectPowerUps = category:AddCheckbox("Auto-Collect Power Ups")
 	autoCollectPowerUps:SetChecked(true)
 	
+	--[[
 	local puzzles = gameKeeper:FindFirstChild("_Puzzles") or Instance.new("Model", gameKeeper)
 	puzzles.Name = "_Puzzles"
 	
@@ -109,6 +111,7 @@ function module.Init(category, connections)
 	cakesESP.OutlineColor = Color3.new(1, 0, 1)
 	cakesESP.Adornee = cakeParts
 	cakesESP.FillTransparency = 0.7
+	]]
 	
 	local autoPuzzles = category:AddCheckbox("Auto-Solve Puzzles")
 	local autoCake = category:AddCheckbox("Auto-Cake")
@@ -210,8 +213,8 @@ function module.Init(category, connections)
 			end
 			if autoCake.Checked then
 				cake = puzzles:FindFirstChild("CakePuzzle")
-				if cake and cakeParts then
-					for k,v in pairs(cakeParts:GetChildren()) do
+				if cake then
+					for k,v in pairs(items:GetChildren()) do
 						if v.Name == "CakePlate" and v:FindFirstChild("Model") and v.Model:FindFirstChild("CakePlate") and
 							v.Model.CakePlate:FindFirstChild("Root") and v.Model.CakePlate.Root:FindFirstChild("ClickDetector") then
 							local f, err = pcall(function()
