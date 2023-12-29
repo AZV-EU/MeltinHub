@@ -7,10 +7,10 @@ local plr = game.Players.LocalPlayer
 local moduleOn = true
 
 function module.PreInit()
-	_G.IndexEmulator:SetKeyValue(_G.SafeGetService("UserInputService"), "TouchEnabled", false)
 end
 
 function module.Init(category, connections)
+	_G.IndexEmulator:SetKeyValue(_G.SafeGetService("UserInputService"), "TouchEnabled", false)
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")
 	local IsGameActive = ReplicatedStorage:WaitForChild("IsGameActive")
 	local CurrentMap = ReplicatedStorage:WaitForChild("CurrentMap")
