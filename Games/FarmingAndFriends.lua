@@ -11,7 +11,7 @@ local autofarm = {
 	raycastPartOrigin = CFrame.new()
 }
 function module.Init(category, connections)
-	local sharedModules = game.ReplicatedStorage:WaitForChild("SharedModules")
+	local sharedModules = game.ReplicatedStorage:WaitForChild("Modules")
 	local tagModule = require(sharedModules:WaitForChild("TagModule"))
 	local itemModule = require(sharedModules:WaitForChild("ItemModule"))
 	local vehicleLogic = require(sharedModules:WaitForChild("VehicleLogic"))
