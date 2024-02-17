@@ -1,4 +1,4 @@
-local Version = "1.6.6"
+local Version = "1.7"
 local BaseUrl = "https://raw.githubusercontent.com/Senzaa/MeltinHub/main/"
 
 -- loadstring(game:HttpGet("https://raw.githubusercontent.com/Senzaa/MeltinHub/main/MeltinHub.lua", true))()
@@ -31,6 +31,7 @@ local repository = {
 	[1903935756] = "Lucky-Block-Tycoon.lua",
 	[1310079979] = "Lucky-Block-Tycoon.lua",
 	[228573408] = "Lucky-Block-Tycoon.lua",
+	[] = "AdoptMe.lua",
 	[1681168130] = "Cart-Ride-Into-Rdite.lua",
 	[873703865] = "Westbound.lua",
 	[703124385] = "Tower-Of-Hell.lua",
@@ -69,8 +70,7 @@ local repository = {
 	[1001911915] = "FarmingAndFriends.lua",
 	[4986566693] = "AnimeChampions.lua",
 	[1802741133] = "CabinCrewSimulator.lua",
-	[5219307126] = "Minecraft.lua",
-	[4383005988] = "Minecraft.lua"
+	[5219307126] = "Minecraft.lua"
 }
 
 --setclipboard(tostring(game.GameId))
@@ -691,12 +691,30 @@ do -- 								CHARACTER CATEGORY
 	end
 	table.insert(connections, plr.CharacterAdded:Connect(updateCharMods))
 	
-	local forceClassicCam = characterCategory:AddCheckbox("Force Classic-Camera")
+	local forceValues = characterCategory:AddCheckbox("F SpeedJump")
+	forceValues.Inline = true
+	forceValues:SetChecked(false)
+	
+	local forceClassicCam = characterCategory:AddCheckbox("F ClassicCam")
 	forceClassicCam:SetChecked(false)
 	
 	task.spawn(function()
 		local senhub = _G.SenHub
-		while task.wait(2) and senhub and senhub.Parent do
+		local human
+		while task.wait(.25) and senhub and senhub.Parent do
+			if forceValues.Checked and plr.Character then
+				if plr.Character then
+					human = plr.Character:FindFirstChildWhichIsA("Humanoid")
+					if human then
+						human.WalkSpeed = speedSlider.Value
+						if human.UseJumpPower then
+							human.JumpPower = jumpSlider.Value
+						else
+							human.JumpHeight = jumpSlider.Value
+						end
+					end
+				end
+			end
 			if forceClassicCam.Checked then
 				plr.CameraMode = Enum.CameraMode.Classic
 			end
