@@ -1,5 +1,5 @@
-local Version = "1.7.1"
-local BaseUrl = "https://raw.githubusercontent.com/Senzaa/MeltinHub/main/"
+local Version = "1.7.3"
+local isDev = false
 
 -- loadstring(game:HttpGet("https://raw.githubusercontent.com/Senzaa/MeltinHub/main/MeltinHub.lua", true))()
 
@@ -8,6 +8,8 @@ local BaseUrl = "https://raw.githubusercontent.com/Senzaa/MeltinHub/main/"
 
 -- Dex Bypasses
 --loadstring(game:HttpGet("https://raw.githubusercontent.com/Babyhamsta/RBLX_Scripts/main/Universal/Bypasses.lua", true))()
+
+local BaseUrl = isDev and "http://azv.ddns.net/MeltinHub/" or "https://raw.githubusercontent.com/Senzaa/MeltinHub/main/"
 
 -- Common anti-cheats bypass
 loadstring(game:HttpGet(BaseUrl .. "AnticheatBypass.lua", true))()
@@ -22,6 +24,9 @@ function _G.SafeGetService(service)
 end
 
 print("MeltinHub " .. Version .. ", Game ID =", game.GameId)
+if isDev then
+	warn("MeltinHub is in Development mode!")
+end
 
 local plr = _G.SafeGetService("Players").LocalPlayer
 
@@ -266,6 +271,13 @@ function _G.AimCameraAt(pos)
 	camera.CameraType = old
 end
 
+function _G.SetCharAnchored(anchored)
+	if not plr or not plr.Character then return end
+	local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
+	if not human or not human.RootPart then return end
+	human.RootPart.Anchored = anchored
+end
+
 function _G.DisableSignal(signal)
 	for k,v in pairs(getconnections(signal)) do
 		v:Disable()
@@ -487,7 +499,7 @@ if not flightModule then warn("Could not load flight module") return end
 
 local UserInputService = _G.SafeGetService("UserInputService")
 
-_G.SenHub = mg.New("MeltinHub v" .. tostring(Version))
+_G.SenHub = mg.New("MeltinHub v" .. tostring(Version) .. (isDev and " [DEV]" or ""))
 if gethgui then
 	_G.SenHub.Parent = gethgui()
 else
@@ -622,16 +634,19 @@ do -- 								CHARACTER CATEGORY
 		end
 	end
 	
+	local lastSpeedVal = defaultSpeed
 	speedSlider = characterCategory:AddSlider("WalkSpeed", defaultSpeed, 1, 1000, function(newValue)
 		if plr.Character then
 			local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
 			if human then
 				human.WalkSpeed = newValue
 			end
+			lastSpeedVal = newValue
 		end
 		--speedSlider.Text = "WalkSpeed: " .. tostring(newValue)
 	end)
 	
+	local lastJumpVal = useJP and defaultJP or defaultJH
 	jumpSlider = characterCategory:AddSlider("Jump Boost", useJP and defaultJP or defaultJH, 1, 500, function(newValue)
 		if plr.Character then
 			local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
@@ -641,15 +656,47 @@ do -- 								CHARACTER CATEGORY
 				else
 					human.JumpHeight = newValue
 				end
+				lastJumpVal = newValue
 			end
 		end
-		--jumpSlider.Text = (useJP and "JumpPower: " or "JumpHeight: ") .. tostring(newValue)
+		--jumpSlider.Text = (useJP and "JumpPower" or "JumpHeight")
 	end)
+	
+	characterCategory:AddButton("Trip", function()
+		if plr and plr.Character then
+			local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
+			if human then
+				if human:GetState() ~= Enum.HumanoidStateType.Physics then
+					human:ChangeState(Enum.HumanoidStateType.Physics)
+					local animate = plr.Character:FindFirstChild("Animate")
+					if animate then
+						
+					end
+				else
+					human:ChangeState(Enum.HumanoidStateType.GettingUp)
+				end
+			end
+		end
+	end)
+	
+	local saveValues = characterCategory:AddCheckbox("Save Slider Values")
+	saveValues:SetChecked(true)
 	
 	local function updateCharMods(chr)
 		repeat task.wait() until chr:FindFirstChildWhichIsA("Humanoid")
 		local human = chr:FindFirstChildWhichIsA("Humanoid")
 		if human then
+			useJP = human.UseJumpPower
+			
+			if saveValues.Checked then
+				human.WalkSpeed = lastSpeedVal
+				if human.UseJumpPower then
+					human.JumpPower = lastJumpVal
+				else
+					human.JumpHeight = lastJumpVal
+				end
+			end
+			
 			speedSlider:SetSliderValue(human.WalkSpeed)
 			if human.UseJumpPower then
 				jumpSlider:SetSliderValue(human.JumpPower)
@@ -669,52 +716,18 @@ do -- 								CHARACTER CATEGORY
 		end
 	end
 	
-	characterCategory:AddButton("Trip", function()
-		if plr and plr.Character then
-			local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
-			if human then
-				if human:GetState() ~= Enum.HumanoidStateType.Physics then
-					human:ChangeState(Enum.HumanoidStateType.Physics)
-					local animate = plr.Character:FindFirstChild("Animate")
-					if animate then
-						
-					end
-				else
-					human:ChangeState(Enum.HumanoidStateType.GettingUp)
-				end
-			end
-		end
-	end)
-	
 	if plr.Character then
 		updateCharMods(plr.Character)
 	end
 	table.insert(connections, plr.CharacterAdded:Connect(updateCharMods))
 	
-	local forceValues = characterCategory:AddCheckbox("F SpeedJump")
-	forceValues.Inline = true
-	forceValues:SetChecked(false)
-	
-	local forceClassicCam = characterCategory:AddCheckbox("F ClassicCam")
+	local forceClassicCam = characterCategory:AddCheckbox("Force Classic-Camera")
 	forceClassicCam:SetChecked(false)
 	
 	task.spawn(function()
 		local senhub = _G.SenHub
 		local human
-		while task.wait(.25) and senhub and senhub.Parent do
-			if forceValues.Checked and plr.Character then
-				if plr.Character then
-					human = plr.Character:FindFirstChildWhichIsA("Humanoid")
-					if human then
-						human.WalkSpeed = speedSlider.Value
-						if human.UseJumpPower then
-							human.JumpPower = jumpSlider.Value
-						else
-							human.JumpHeight = jumpSlider.Value
-						end
-					end
-				end
-			end
+		while task.wait(2) and senhub and senhub.Parent do
 			if forceClassicCam.Checked then
 				plr.CameraMode = Enum.CameraMode.Classic
 			end
