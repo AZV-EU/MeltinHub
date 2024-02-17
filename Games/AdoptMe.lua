@@ -91,7 +91,6 @@ function module.Init(category, connections)
 		if not IsAtHome() then
 			_G.SetCharAnchored(true)
 			SetLocation("housing", "MainDoor", {
-				["anchor_char_immediately"] = true,
 				["house_owner"] = plr
 			})
 			_G.SetCharAnchored(false)
@@ -109,17 +108,17 @@ function module.Init(category, connections)
 	
 	local function TeleportToStore(shopName)
 		if GetInteriorBlueprint().Name ~= shopName then
-			SetLocation(shopName, "MainDoor", {
-				["anchor_char_immediately"] = true
-			})
+			_G.SetCharAnchored(true)
+			SetLocation(shopName, "MainDoor", {})
+			_G.SetCharAnchored(false)
 		end
 	end
 	
 	local function TeleportToMainMap()
 		if GetInteriorBlueprint().Name ~= "MainMap" then
-			SetLocation("MainMap", "Neighborhood/MainDoor", {
-				["anchor_char_immediately"] = true
-			})
+			_G.SetCharAnchored(true)
+			SetLocation("MainMap", "Neighborhood/MainDoor", {})
+			_G.SetCharAnchored(false)
 		end
 	end
 	
@@ -165,18 +164,25 @@ function module.Init(category, connections)
 	end]]
 	
 	local function ReequipPet(pet)
-		if Pet.Current and Pet.Current.unique == pet.unique then return end
-		Pet.Current = pet
-		API.ToolAPI.Unequip:InvokeServer(pet.unique)
+		local eqPet = GetEquippedPet()
+		if eqPet then
+			if eqPet.unique == pet.unique and Pet.Model and Pet.Model.Parent then
+				return
+			end
+			API.ToolAPI.Unequip:InvokeServer(eqPet.unique)
+		end
 		_, Pet.Model = API.ToolAPI.Equip:InvokeServer(pet.unique)
+		Pet.Current = pet
 	end
 	
 	local function AutoSelectPet()
 		local oldestPet, oldestAge = nil, 0
 		for _,pet in pairs(GetPets()) do
-			if pet.id ~= "practice_dog" and pet.properties.age < 6 and (not oldestPet or pet.properties.age > oldestAge) then
-				oldestPet = pet
-				oldestAge = pet.properties.age
+			if pet.id ~= "practice_dog" and pet.properties.age < 6 then
+				if not oldestPet or pet.properties.age > oldestAge then
+					oldestPet = pet
+					oldestAge = pet.properties.age
+				end
 			end
 		end
 		return oldestPet
@@ -248,25 +254,19 @@ function module.Init(category, connections)
 				end
 			end
 		end
+		print(foodId, "->", lowestFood)
 		return lowestFood
 	end
 	
 	local function GetFood(isDrink)
-		if GetClientData().is_vip then
-			if not GetLowestUsesFood(isDrink and "water_vip" or "ham_vip") then
-				API.ShopAPI.BuyItem:InvokeServer("food", isDrink and "water_vip" or "ham_vip", {})
-			end
-			return GetLowestUsesFood(isDrink and "water_vip" or "ham_vip")
-		else
-			if isDrink and not GetLowestUsesFood("tea") then
-				API.ShopAPI.BuyItem:InvokeServer("food", "tea", {})
-			elseif not isDrink and not GetLowestUsesFood("pizza") then
-				API.ShopAPI.BuyItem:InvokeServer("food", "pizza", {})
-				API.ToolAPI.BakeItem:InvokeServer()
-				task.wait(3)
-			end
-			return GetLowestUsesFood(isDrink and "tea" or "pizza")
+		if isDrink and not GetLowestUsesFood("tea") then
+			API.ShopAPI.BuyItem:InvokeServer("food", "tea", {})
+		elseif not isDrink and not GetLowestUsesFood("pizza") then
+			API.ShopAPI.BuyItem:InvokeServer("food", "pizza", {})
+			API.ToolAPI.BakeItem:InvokeServer()
+			task.wait(3)
 		end
+		return GetLowestUsesFood(isDrink and "tea" or "pizza")
 	end
 	
 	local function GetAilmentFromUnique(ailment_unique, isPlayer)
@@ -342,12 +342,14 @@ function module.Init(category, connections)
 			end
 		end,
 		["hungry"] = function(ailment_unique, isPlayer)
-			local food_unique
+			local food_unique = GetFood(false)
+			if not food_unique then
+				return
+			end
 			if isPlayer then
 				repeat
 					food_unique = GetFood(false)
 					if not food_unique then
-						warn("Could not get food!")
 						return
 					end
 					API.ToolAPI.Equip:InvokeServer(food_unique, {["use_sound_delay"] = true})
@@ -356,11 +358,6 @@ function module.Init(category, connections)
 					task.wait(.33)
 				until IsAilmentDone(ailment_unique, isPlayer)
 			else
-				food_unique = GetFood(false)
-				if not food_unique then
-					warn("Could not get food!")
-					return
-				end
 				API.ToolAPI.Equip:InvokeServer(food_unique, {["use_sound_delay"] = true})
 				API.PetObjectAPI.CreatePetObject:InvokeServer("__Enum_PetObjectCreatorType_2", {["unique_id"] = food_unique})
 				API.PetAPI.ConsumeFoodItem:FireServer(food_unique)
@@ -369,12 +366,14 @@ function module.Init(category, connections)
 			end
 		end,
 		["thirsty"] = function(ailment_unique, isPlayer)
-			local drink_unique
+			local drink_unique = GetFood(true)
+			if not drink_unique then
+				return
+			end
 			if isPlayer then
 				repeat
 					drink_unique = GetFood(true)
 					if not drink_unique then
-						warn("Could not get drink!")
 						return
 					end
 					API.ToolAPI.Equip:InvokeServer(drink_unique, {["use_sound_delay"] = true})
@@ -383,11 +382,6 @@ function module.Init(category, connections)
 					task.wait(.33)
 				until IsAilmentDone(ailment_unique, isPlayer) or not autoFarm.Checked or not module.On
 			else
-				drink_unique = GetFood(true)
-				if not drink_unique then
-					warn("Could not get drink!")
-					return
-				end
 				API.ToolAPI.Equip:InvokeServer(drink_unique, {["use_sound_delay"] = true})
 				API.PetObjectAPI.CreatePetObject:InvokeServer("__Enum_PetObjectCreatorType_2", {["unique_id"] = drink_unique})
 				API.PetAPI.ConsumeFoodItem:FireServer(drink_unique)
@@ -397,54 +391,45 @@ function module.Init(category, connections)
 		end,
 		["sick"] = function(ailment_unique, isPlayer)
 			API.MonitorAPI.HealWithDoctor:FireServer()
-			if isPlayer then _G.SetCharAnchored(true) end
-			WaitUntilAilmentDone(ailment_unique, isPlayer)
-			if isPlayer then _G.SetCharAnchored(false) end
 		end,
 		["adoption_party"] = function(ailment_unique, isPlayer)
 			TeleportToStore("Nursery")
-			if isPlayer then _G.SetCharAnchored(true) end
+			_G.SetCharAnchored(true)
 			WaitUntilAilmentDone(ailment_unique, isPlayer)
-			if isPlayer then _G.SetCharAnchored(false) end
+			_G.SetCharAnchored(false)
 		end,
 		["school"] = function(ailment_unique, isPlayer)
 			TeleportToStore("School")
-			if isPlayer then _G.SetCharAnchored(true) end
+			_G.SetCharAnchored(true)
 			WaitUntilAilmentDone(ailment_unique, isPlayer)
-			if isPlayer then _G.SetCharAnchored(false) end
+			_G.SetCharAnchored(false)
 		end,
 		["pizza_party"] = function(ailment_unique, isPlayer)
 			TeleportToStore("PizzaShop")
-			if isPlayer then _G.SetCharAnchored(true) end
+			_G.SetCharAnchored(true)
 			WaitUntilAilmentDone(ailment_unique, isPlayer)
-			if isPlayer then _G.SetCharAnchored(false) end
+			_G.SetCharAnchored(false)
 		end,
 		["salon"] = function(ailment_unique, isPlayer)
 			TeleportToStore("Salon")
-			if isPlayer then _G.SetCharAnchored(true) end
+			_G.SetCharAnchored(true)
 			WaitUntilAilmentDone(ailment_unique, isPlayer)
-			if isPlayer then _G.SetCharAnchored(false) end
+			_G.SetCharAnchored(false)
 		end,
 		["pool_party"] = function(ailment_unique, isPlayer)
 			TeleportToMainMap()
 			_G.TeleportPlayerTo(game.Workspace.StaticMap.Pool.PoolOrigin.Position + Vector3.new(0, 5, 0))
-			if isPlayer then _G.SetCharAnchored(true) end
 			WaitUntilAilmentDone(ailment_unique, isPlayer)
-			if isPlayer then _G.SetCharAnchored(false) end
 		end,
 		["camping"] = function(ailment_unique, isPlayer)
 			TeleportToMainMap()
 			_G.TeleportPlayerTo(Workspace.StaticMap.Campsite.CampsiteOrigin.Position + Vector3.new(0, 5, 0))
-			if isPlayer then _G.SetCharAnchored(true) end
 			WaitUntilAilmentDone(ailment_unique, isPlayer)
-			if isPlayer then _G.SetCharAnchored(false) end
 		end,
 		["bored"] = function(ailment_unique, isPlayer)
 			TeleportToMainMap()
 			_G.TeleportPlayerTo(Workspace.StaticMap.Park.AilmentTarget.Position + Vector3.new(0, 5, 0))
-			if isPlayer then _G.SetCharAnchored(true) end
 			WaitUntilAilmentDone(ailment_unique, isPlayer)
-			if isPlayer then _G.SetCharAnchored(false) end
 		end
 	}
 	
