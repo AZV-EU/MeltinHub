@@ -81,43 +81,52 @@ function module.Init(category, connections)
 		return HouseInteriors.blueprint:FindFirstChildWhichIsA("Model") or game.Workspace.Interiors:FindFirstChildWhichIsA("Model")
 	end
 	
-	local function IsAtHome()
+	local function IsAtPlace(placeName)
 		local bp = GetInteriorBlueprint()
-		return bp and bp.Name == plr.Name
+		return bp and bp.Name == placeName
 	end
 	
 	local function TeleportHome()
-		if not IsAtHome() then
-			_G.SetCharAnchored(true)
-			SetLocation("housing", "MainDoor", {
-				["house_owner"] = plr
-			})
-			_G.SetCharAnchored(false)
-			if IsAtHome() then
-				local mainDoor = GetInteriorBlueprint():FindFirstChild("MainDoor", true)
-				if mainDoor then
-					local touchToEnter = mainDoor:FindFirstChild("TouchToEnter", true)
-					if touchToEnter then
-						_G.TeleportPlayerTo(touchToEnter.CFrame * CFrame.new(0, 0, -5))
+		if not IsAtPlace(plr.Name) then
+			while not IsAtPlace(plr.Name) and task.wait(1) and module.On do
+				_G.SetCharAnchored(true)
+				SetLocation("housing", "MainDoor", {
+					["house_owner"] = plr
+				})
+				_G.SetCharAnchored(false)
+				if IsAtPlace(plr.Name) then
+					local mainDoor = GetInteriorBlueprint():FindFirstChild("MainDoor", true)
+					if mainDoor then
+						local touchToEnter = mainDoor:FindFirstChild("TouchToEnter", true)
+						if touchToEnter then
+							_G.TeleportPlayerTo(touchToEnter.CFrame * CFrame.new(0, 0, -5))
+						end
 					end
 				end
 			end
+			task.wait(3)
 		end
 	end
 	
 	local function TeleportToStore(shopName)
-		if GetInteriorBlueprint().Name ~= shopName then
-			_G.SetCharAnchored(true)
-			SetLocation(shopName, "MainDoor", {})
-			_G.SetCharAnchored(false)
+		if not IsAtPlace(shopName) then
+			while not IsAtPlace(shopName) and task.wait(1) and module.On do
+				_G.SetCharAnchored(true)
+				SetLocation(shopName, "MainDoor", {})
+				_G.SetCharAnchored(false)
+			end
+			task.wait(3)
 		end
 	end
 	
 	local function TeleportToMainMap()
-		if GetInteriorBlueprint().Name ~= "MainMap" then
-			_G.SetCharAnchored(true)
+		if not IsAtPlace(shopName) then
+			while not IsAtPlace("MainMap") and task.wait(1) and module.On do
+				_G.SetCharAnchored(true)
 			SetLocation("MainMap", "Neighborhood/MainDoor", {})
-			_G.SetCharAnchored(false)
+				_G.SetCharAnchored(false)
+			end
+			task.wait(3)
 		end
 	end
 	
@@ -154,13 +163,6 @@ function module.Init(category, connections)
 	local function GetPlayerTeam()
 		return GetClientData().team
 	end
-	
-	--[[do
-		for _,pet in pairs(GetPets()) do
-			pet.properties.rideable = true
-			pet.properties.flyable = true
-		end
-	end]]
 	
 	local function ReequipPet(pet)
 		local eqPet = GetEquippedPet()
@@ -253,7 +255,6 @@ function module.Init(category, connections)
 				end
 			end
 		end
-		print(foodId, "->", lowestFood)
 		return lowestFood
 	end
 	
@@ -297,9 +298,10 @@ function module.Init(category, connections)
 		until IsAilmentDone(ailment_unique, isPlayer) or tick() - waitStart > MAX_WAIT or not autoFarm.Checked or not module.On
 	end
 	
+	local autoEvents
 	local AilmentFuncTable = {
 		["sleepy"] = function(ailment_unique, isPlayer)
-			TeleportHome()
+			if not autoEvents.Checked then TeleportHome() end
 			local bed = GetFurnitureByUseId("generic_crib")
 			if bed then
 				task.spawn(function()
@@ -320,7 +322,7 @@ function module.Init(category, connections)
 			end
 		end,
 		["dirty"] = function(ailment_unique, isPlayer)
-			TeleportHome()
+			if not autoEvents.Checked then TeleportHome() end
 			local shower = GetFurnitureByUseId("generic_shower")
 			if shower then
 				task.spawn(function()
@@ -392,40 +394,47 @@ function module.Init(category, connections)
 			MonitorAPI.HealWithDoctor:FireServer()
 		end,
 		["adoption_party"] = function(ailment_unique, isPlayer)
+			if autoEvents.Checked then return end
 			TeleportToStore("Nursery")
 			_G.SetCharAnchored(true)
 			WaitUntilAilmentDone(ailment_unique, isPlayer)
 			_G.SetCharAnchored(false)
 		end,
 		["school"] = function(ailment_unique, isPlayer)
+			if autoEvents.Checked then return end
 			TeleportToStore("School")
 			_G.SetCharAnchored(true)
 			WaitUntilAilmentDone(ailment_unique, isPlayer)
 			_G.SetCharAnchored(false)
 		end,
 		["pizza_party"] = function(ailment_unique, isPlayer)
+			if autoEvents.Checked then return end
 			TeleportToStore("PizzaShop")
 			_G.SetCharAnchored(true)
 			WaitUntilAilmentDone(ailment_unique, isPlayer)
 			_G.SetCharAnchored(false)
 		end,
 		["salon"] = function(ailment_unique, isPlayer)
+			if autoEvents.Checked then return end
 			TeleportToStore("Salon")
 			_G.SetCharAnchored(true)
 			WaitUntilAilmentDone(ailment_unique, isPlayer)
 			_G.SetCharAnchored(false)
 		end,
 		["pool_party"] = function(ailment_unique, isPlayer)
+			if autoEvents.Checked then return end
 			TeleportToMainMap()
 			_G.TeleportPlayerTo(game.Workspace.StaticMap.Pool.PoolOrigin.Position + Vector3.new(0, 5, 0))
 			WaitUntilAilmentDone(ailment_unique, isPlayer)
 		end,
 		["camping"] = function(ailment_unique, isPlayer)
+			if autoEvents.Checked then return end
 			TeleportToMainMap()
 			_G.TeleportPlayerTo(Workspace.StaticMap.Campsite.CampsiteOrigin.Position + Vector3.new(0, 5, 0))
 			WaitUntilAilmentDone(ailment_unique, isPlayer)
 		end,
 		["bored"] = function(ailment_unique, isPlayer)
+			if autoEvents.Checked then return end
 			TeleportToMainMap()
 			_G.TeleportPlayerTo(Workspace.StaticMap.Park.AilmentTarget.Position + Vector3.new(0, 5, 0))
 			WaitUntilAilmentDone(ailment_unique, isPlayer)
@@ -486,21 +495,6 @@ function module.Init(category, connections)
 	do -- events
 		local category = _G.SenHub:AddCategory("Events")
 		
-		local args = {
-    [1] = "red_light_green_light",
-    [2] = "attempt_pick_up",
-    [3] = "fa026dba-378a-4529-8f2b-3139acb0a263"
-}
-
-game:GetService("ReplicatedStorage"):WaitForChild("API"):WaitForChild("MinigameAPI/MessageServer"):FireServer(unpack(args))
-local args = {
-    [1] = "red_light_green_light",
-    [2] = "attempt_drop_off",
-    [3] = 2
-}
-
-game:GetService("ReplicatedStorage"):WaitForChild("API"):WaitForChild("MinigameAPI/MessageServer"):FireServer(unpack(args))
-
 		local StaticMap = game.Workspace:WaitForChild("StaticMap")
 		local EventHandlers = {
 			Lunar2024Shop = {
@@ -545,7 +539,7 @@ game:GetService("ReplicatedStorage"):WaitForChild("API"):WaitForChild("MinigameA
 			}
 		}
 		
-		local autoEvents = category:AddCheckbox("Auto-events")
+		autoEvents = category:AddCheckbox("Auto-events")
 		autoEvents:SetChecked(true)
 		
 		task.spawn(function()
