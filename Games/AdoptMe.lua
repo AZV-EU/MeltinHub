@@ -512,7 +512,7 @@ game:GetService("ReplicatedStorage"):WaitForChild("API"):WaitForChild("MinigameA
 						local arena = map:FindFirstChild("Arena")
 						if arena then
 							local throwables = arena:FindFirstChild("Throwables")
-							if throwables and safeZones then
+							if throwables then
 								local targets = {}
 								for _, throwable in pairs(throwables:GetChildren()) do
 									if throwable:IsA("Model") and throwable:GetAttribute("UserId") == plr.UserId and throwable.Name == "ThrowableGold" then
