@@ -480,7 +480,7 @@ function module.Init(category, connections)
 	category:AddButton("TP MainMap", TeleportToMainMap)
 	
 	category:AddCheckbox("Mute Party Invites", function(state)
-		plr:WaitForChild("PlayerGui"):WaitForChild("PartyInvitationApp").Enabled = state
+		plr:WaitForChild("PlayerGui"):WaitForChild("PartyInvitationApp").Enabled = not state
 	end):SetChecked(true)
 	
 	do -- events
