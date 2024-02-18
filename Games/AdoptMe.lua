@@ -486,6 +486,21 @@ function module.Init(category, connections)
 	do -- events
 		local category = _G.SenHub:AddCategory("Events")
 		
+		local args = {
+    [1] = "red_light_green_light",
+    [2] = "attempt_pick_up",
+    [3] = "fa026dba-378a-4529-8f2b-3139acb0a263"
+}
+
+game:GetService("ReplicatedStorage"):WaitForChild("API"):WaitForChild("MinigameAPI/MessageServer"):FireServer(unpack(args))
+local args = {
+    [1] = "red_light_green_light",
+    [2] = "attempt_drop_off",
+    [3] = 2
+}
+
+game:GetService("ReplicatedStorage"):WaitForChild("API"):WaitForChild("MinigameAPI/MessageServer"):FireServer(unpack(args))
+
 		local StaticMap = game.Workspace:WaitForChild("StaticMap")
 		local EventHandlers = {
 			Lunar2024Shop = {
@@ -497,9 +512,7 @@ function module.Init(category, connections)
 						local arena = map:FindFirstChild("Arena")
 						if arena then
 							local throwables = arena:FindFirstChild("Throwables")
-							local safeZones = arena:FindFirstChild("SafeZones")
 							if throwables and safeZones then
-								local targetSafeZone = safeZones:GetChildren()[1]
 								local targets = {}
 								for _, throwable in pairs(throwables:GetChildren()) do
 									if throwable:IsA("Model") and throwable:GetAttribute("UserId") == plr.UserId and throwable.Name == "ThrowableGold" then
@@ -514,16 +527,16 @@ function module.Init(category, connections)
 								if #targets > 0 then
 									local count = 0
 									for _, target in pairs(targets) do
-										_G.TeleportPlayerTo(target.PrimaryPart.CFrame)
+										MinigameAPI.MessageServer:FireServer("red_light_green_light", "attempt_pick_up", target:GetAttribute("Id"))
 										task.wait(.5)
 										count += 1
 										if count == 3 then
-											_G.TeleportPlayerTo(targetSafeZone.Position - Vector3.new(0, targetSafeZone.Size.Y/2-2.5, 0))
+											MinigameAPI.MessageServer:FireServer("red_light_green_light", "attempt_drop_off", 1)
 											task.wait(.5)
 											count = 0
 										end
 									end
-									_G.TeleportPlayerTo(targetSafeZone.Position - Vector3.new(0, targetSafeZone.Size.Y/2-2.5, 0))
+									MinigameAPI.MessageServer:FireServer("red_light_green_light", "attempt_drop_off", 1)
 								end
 							end
 						end
