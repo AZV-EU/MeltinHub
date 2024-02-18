@@ -25,16 +25,15 @@ function module.Init(category, connections)
 	}
 	
 	-- API deobfuscator
-	local API = {}
 	for k,v in pairs(getupvalue(require(_G.SafeGetService("ReplicatedStorage").Fsys).load("RouterClient").init, 4)) do
 		local cls, fnName = unpack(string.split(k,"/"))
-		if not API[cls] then
-			API[cls] = {}
+		if not getgenv()[cls] then
+			getgenv()[cls] = {}
 		end
-		API[cls][fnName] = v
+		getgenv()[cls][fnName] = v
 		v.Name = k
 	end
-	_G.MethodEmulator:SetMethodOverride(API.ErrorReportAPI.SendUniqueError, "FireServer", function() end)
+	_G.MethodEmulator:SetMethodOverride(ErrorReportAPI.SendUniqueError, "FireServer", function() end)
 	
 	local LocationFunc = nil
 	for k, v in pairs(getgc()) do
@@ -169,9 +168,9 @@ function module.Init(category, connections)
 			if eqPet.unique == pet.unique and Pet.Model and Pet.Model.Parent then
 				return
 			end
-			API.ToolAPI.Unequip:InvokeServer(eqPet.unique)
+			ToolAPI.Unequip:InvokeServer(eqPet.unique)
 		end
-		_, Pet.Model = API.ToolAPI.Equip:InvokeServer(pet.unique)
+		_, Pet.Model = ToolAPI.Equip:InvokeServer(pet.unique)
 		Pet.Current = pet
 	end
 	
@@ -260,10 +259,10 @@ function module.Init(category, connections)
 	
 	local function GetFood(isDrink)
 		if isDrink and not GetLowestUsesFood("tea") then
-			API.ShopAPI.BuyItem:InvokeServer("food", "tea", {})
+			ShopAPI.BuyItem:InvokeServer("food", "tea", {})
 		elseif not isDrink and not GetLowestUsesFood("pizza") then
-			API.ShopAPI.BuyItem:InvokeServer("food", "pizza", {})
-			API.ToolAPI.BakeItem:InvokeServer()
+			ShopAPI.BuyItem:InvokeServer("food", "pizza", {})
+			ToolAPI.BakeItem:InvokeServer()
 			task.wait(3)
 		end
 		return GetLowestUsesFood(isDrink and "tea" or "pizza")
@@ -304,7 +303,7 @@ function module.Init(category, connections)
 			local bed = GetFurnitureByUseId("generic_crib")
 			if bed then
 				task.spawn(function()
-					API.HousingAPI.ActivateFurniture:InvokeServer(
+					HousingAPI.ActivateFurniture:InvokeServer(
 						plr,
 						bed,
 						"UseBlock",
@@ -325,7 +324,7 @@ function module.Init(category, connections)
 			local shower = GetFurnitureByUseId("generic_shower")
 			if shower then
 				task.spawn(function()
-					API.HousingAPI.ActivateFurniture:InvokeServer(
+					HousingAPI.ActivateFurniture:InvokeServer(
 						plr,
 						shower,
 						"UseBlock",
@@ -352,15 +351,15 @@ function module.Init(category, connections)
 					if not food_unique then
 						return
 					end
-					API.ToolAPI.Equip:InvokeServer(food_unique, {["use_sound_delay"] = true})
-					API.ToolAPI.ServerUseTool:FireServer(food_unique, "START")
-					API.ToolAPI.ServerUseTool:FireServer(food_unique, "END")
+					ToolAPI.Equip:InvokeServer(food_unique, {["use_sound_delay"] = true})
+					ToolAPI.ServerUseTool:FireServer(food_unique, "START")
+					ToolAPI.ServerUseTool:FireServer(food_unique, "END")
 					task.wait(.33)
 				until IsAilmentDone(ailment_unique, isPlayer)
 			else
-				API.ToolAPI.Equip:InvokeServer(food_unique, {["use_sound_delay"] = true})
-				API.PetObjectAPI.CreatePetObject:InvokeServer("__Enum_PetObjectCreatorType_2", {["unique_id"] = food_unique})
-				API.PetAPI.ConsumeFoodItem:FireServer(food_unique)
+				ToolAPI.Equip:InvokeServer(food_unique, {["use_sound_delay"] = true})
+				PetObjectAPI.CreatePetObject:InvokeServer("__Enum_PetObjectCreatorType_2", {["unique_id"] = food_unique})
+				PetAPI.ConsumeFoodItem:FireServer(food_unique)
 				task.wait(2)
 				WaitUntilAilmentDone(ailment_unique, isPlayer)
 			end
@@ -376,21 +375,21 @@ function module.Init(category, connections)
 					if not drink_unique then
 						return
 					end
-					API.ToolAPI.Equip:InvokeServer(drink_unique, {["use_sound_delay"] = true})
-					API.ToolAPI.ServerUseTool:FireServer(drink_unique, "START")
-					API.ToolAPI.ServerUseTool:FireServer(drink_unique, "END")
+					ToolAPI.Equip:InvokeServer(drink_unique, {["use_sound_delay"] = true})
+					ToolAPI.ServerUseTool:FireServer(drink_unique, "START")
+					ToolAPI.ServerUseTool:FireServer(drink_unique, "END")
 					task.wait(.33)
 				until IsAilmentDone(ailment_unique, isPlayer) or not autoFarm.Checked or not module.On
 			else
-				API.ToolAPI.Equip:InvokeServer(drink_unique, {["use_sound_delay"] = true})
-				API.PetObjectAPI.CreatePetObject:InvokeServer("__Enum_PetObjectCreatorType_2", {["unique_id"] = drink_unique})
-				API.PetAPI.ConsumeFoodItem:FireServer(drink_unique)
+				ToolAPI.Equip:InvokeServer(drink_unique, {["use_sound_delay"] = true})
+				PetObjectAPI.CreatePetObject:InvokeServer("__Enum_PetObjectCreatorType_2", {["unique_id"] = drink_unique})
+				PetAPI.ConsumeFoodItem:FireServer(drink_unique)
 				task.wait(2)
 				WaitUntilAilmentDone(ailment_unique, isPlayer)
 			end
 		end,
 		["sick"] = function(ailment_unique, isPlayer)
-			API.MonitorAPI.HealWithDoctor:FireServer()
+			MonitorAPI.HealWithDoctor:FireServer()
 		end,
 		["adoption_party"] = function(ailment_unique, isPlayer)
 			TeleportToStore("Nursery")
@@ -477,7 +476,86 @@ function module.Init(category, connections)
 		end
 	end)
 	
-	category:AddButton("Teleport Home", TeleportHome)
+	category:AddButton("TP Home", TeleportHome).Inline = true
+	category:AddButton("TP MainMap", TeleportToMainMap)
+	
+	category:AddCheckbox("Mute Party Invites", function(state)
+		plr:WaitForChild("PlayerGui"):WaitForChild("PartyInvitationApp").Enabled = state
+	end):SetChecked(true)
+	
+	do -- events
+		local category = _G.SenHub:AddCategory("Events")
+		
+		local StaticMap = game.Workspace:WaitForChild("StaticMap")
+		local EventHandlers = {
+			Lunar2024Shop = {
+				TargetMap = "Lunar2024Shop",
+				Tick = function()
+					local state = StaticMap:FindFirstChild("red_light_green_light_minigame_state")
+					local map = GetInteriorBlueprint()
+					if map and state and state:FindFirstChild("is_game_active") and state.is_game_active.Value == true and state:FindFirstChild("players_loading") and state.players_loading.Value == false then
+						local arena = map:FindFirstChild("Arena")
+						if arena then
+							local throwables = arena:FindFirstChild("Throwables")
+							local safeZones = arena:FindFirstChild("SafeZones")
+							if throwables and safeZones then
+								local targetSafeZone = safeZones:GetChildren()[1]
+								local targets = {}
+								for _, throwable in pairs(throwables:GetChildren()) do
+									if throwable:IsA("Model") and throwable:GetAttribute("UserId") == plr.UserId and throwable.Name == "ThrowableGold" then
+										table.insert(targets, throwable)
+									end
+								end
+								for _, throwable in pairs(throwables:GetChildren()) do
+									if throwable:IsA("Model") and throwable:GetAttribute("UserId") == plr.UserId and throwable.Name == "ThrowableNormal" then
+										table.insert(targets, throwable)
+									end
+								end
+								if #targets > 0 then
+									local count = 0
+									for _, target in pairs(targets) do
+										_G.TeleportPlayerTo(target.PrimaryPart.CFrame)
+										task.wait(.5)
+										count += 1
+										if count == 3 then
+											_G.TeleportPlayerTo(targetSafeZone.Position - Vector3.new(0, targetSafeZone.Size.Y/2-2.5, 0))
+											task.wait(.5)
+											count = 0
+										end
+									end
+									_G.TeleportPlayerTo(targetSafeZone.Position - Vector3.new(0, targetSafeZone.Size.Y/2-2.5, 0))
+								end
+							end
+						end
+					end
+				end
+			}
+		}
+		
+		local autoEvents = category:AddCheckbox("Auto-events")
+		autoEvents:SetChecked(true)
+		
+		task.spawn(function()
+			local map
+			while task.wait(.5) and module.On do
+				if autoEvents.Checked then
+					map = GetInteriorBlueprint()
+					if map then
+						for _, eventHandler in pairs(EventHandlers) do
+							if eventHandler.TargetMap == map.Name then
+								local f, err = pcall(eventHandler.Tick)
+								if not f then
+									warn(err)
+								end
+							end
+						end
+					end
+				else
+					task.wait(2)
+				end
+			end
+		end)
+	end
 end
 
 function module.Shutdown()
