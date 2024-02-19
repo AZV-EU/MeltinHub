@@ -158,10 +158,10 @@ function module.Init(category, connections)
 		if autoComputer.Checked then
 			local func, param = args[1], args[2]
 			if func and func == "SetPlayerMinigameResult" and not param then
-				return orig("SetPlayerMinigameResult", true)
+				return orig(self, "SetPlayerMinigameResult", true)
 			end
 		end
-		return orig(...)
+		return orig(self, ...)
 	end)
 	
 	task.spawn(function()
