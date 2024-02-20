@@ -4,11 +4,11 @@ local module = {
 }
 
 local plr = game.Players.LocalPlayer
-local moduleOn = true
 
 function module.PreInit()
 end
 
+local originalFunc
 function module.Init(category, connections)
 	--_G.IndexEmulator:SetKeyValue(_G.SafeGetService("UserInputService"), "TouchEnabled", false)
 	local UserInputService = _G.SafeGetService("UserInputService")
@@ -63,26 +63,8 @@ function module.Init(category, connections)
 		return targets
 	end
 	
-	local function SetOldHammerEnabled(enabled)
-		if plr and plr.Character and plr.Character:FindFirstChild("Hammer") and plr.Character.Hammer:FindFirstChild("LocalClubScript") then
-			plr.Character.Hammer.LocalClubScript.Disabled = not enabled
-		end
-	end
-	local betterHammer = category:AddCheckbox("Better Hammer", function(state)
-		--SetOldHammerEnabled(not state)
-	end)
+	local betterHammer = category:AddCheckbox("Better Hammer")
 	betterHammer:SetChecked(true)
-	
-	--[[
-	table.insert(connections, plr.CharacterAdded:Connect(function(chr)
-		table.insert(connections, chr.ChildAdded:Connect(function(child)
-			if child.Name == "Hammer" then
-				task.wait(1)
-				SetOldHammerEnabled(not batterHammer.Checked)
-			end
-		end))
-	end))
-	]]
 	
 	local function GetCarriedPlayer()
 		if plr.Character:FindFirstChild("CarriedTorso") and plr.Character.CarriedTorso.Value then
@@ -148,10 +130,9 @@ function module.Init(category, connections)
 		end
 	end))
 	
-	local autoFree = category:AddCheckbox("Auto-free")
-	--autoFree:SetChecked(true)
 	local autoComputer = category:AddCheckbox("Auto-computer")
 	autoComputer:SetChecked(true)
+	local autoFree = category:AddCheckbox("Auto-free")
 	
 	_G.MethodEmulator:SetMethodOverride(RemoteEvent, "FireServer", function(self, orig, ...)
 		local args = {...}
@@ -163,6 +144,21 @@ function module.Init(category, connections)
 		end
 		return orig(self, ...)
 	end)
+	
+	local function SetupCharacter(chr)
+		task.wait(3)
+		local powers = chr:FindFirstChild("BeastPowers")
+		if powers and powers:FindFirstChild("PowersEvent") then
+			_G.MethodEmulator:SetMethodOverride(powers.PowersEvent, "FireServer", function(self, orig, ...)
+				local args = {...}
+				if #args > 0 and args[1] == "Jumped" then return end
+				orig(self, ...)
+			end)
+		end
+	end
+	
+	table.insert(connections, plr.CharacterAdded:Connect(SetupCharacter))
+	SetupCharacter(plr.Character)
 	
 	task.spawn(function()
 		while task.wait(2) and module.On do
@@ -190,7 +186,7 @@ function module.Init(category, connections)
 end
 
 function module.Shutdown()
-	moduleOn = false
+	_G.MethodEmulator:Reset()
 end
 
 return module

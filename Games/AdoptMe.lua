@@ -143,7 +143,19 @@ function module.Init(category, connections)
 		return GetClientData().equip_manager.pets
 	end
 	
+	local function GetFurnitureByName(name)
+		local furniture = {}
+		for _,fContainer in pairs(HouseInteriors.furniture:GetChildren()) do
+			local fModel = fContainer:FindFirstChildWhichIsA("Model")
+			if fModel and fModel.Name == name then
+				table.insert(furniture, fModel:GetAttribute("furniture_unique"))
+			end
+		end
+		return furniture
+	end
+	
 	local function GetFurnitureByUseId(use_id)
+		local furniture = {}
 		for _,fContainer in pairs(HouseInteriors.furniture:GetChildren()) do
 			local fModel = fContainer:FindFirstChildWhichIsA("Model")
 			if fModel then
@@ -152,12 +164,13 @@ function module.Init(category, connections)
 					for _,useBlock in pairs(useBlocks:GetChildren()) do
 						local config = useBlock:FindFirstChild("Configuration")
 						if config and config:FindFirstChild("use_id") and config.use_id.Value == use_id then
-							return fModel:GetAttribute("furniture_unique")
+							table.insert(furniture, fModel:GetAttribute("furniture_unique"))
 						end
 					end
 				end
 			end
 		end
+		return furniture
 	end
 	
 	local function GetPlayerTeam()
@@ -302,12 +315,12 @@ function module.Init(category, connections)
 	local AilmentFuncTable = {
 		["sleepy"] = function(ailment_unique, isPlayer)
 			if not autoEvents.Checked then TeleportHome() end
-			local bed = GetFurnitureByUseId("generic_crib")
-			if bed then
+			local beds = GetFurnitureByUseId("generic_crib")
+			if #beds > 0 then
 				task.spawn(function()
 					HousingAPI.ActivateFurniture:InvokeServer(
 						plr,
-						bed,
+						beds[1],
 						"UseBlock",
 						{
 							["cframe"] = plr.Character:GetPivot()
@@ -323,12 +336,12 @@ function module.Init(category, connections)
 		end,
 		["dirty"] = function(ailment_unique, isPlayer)
 			if not autoEvents.Checked then TeleportHome() end
-			local shower = GetFurnitureByUseId("generic_shower")
-			if shower then
+			local showers = GetFurnitureByUseId("generic_shower")
+			if #showers > 0 then
 				task.spawn(function()
 					HousingAPI.ActivateFurniture:InvokeServer(
 						plr,
-						shower,
+						showers[1],
 						"UseBlock",
 						{
 							["cframe"] = plr.Character:GetPivot()
@@ -497,12 +510,11 @@ function module.Init(category, connections)
 		
 		local StaticMap = game.Workspace:WaitForChild("StaticMap")
 		local EventHandlers = {
-			Lunar2024Shop = {
-				TargetMap = "Lunar2024Shop",
-				Tick = function()
-					local state = StaticMap:FindFirstChild("red_light_green_light_minigame_state")
-					local map = GetInteriorBlueprint()
-					if map and state and state:FindFirstChild("is_game_active") and state.is_game_active.Value == true and state:FindFirstChild("players_loading") and state.players_loading.Value == false then
+			Lunar2024Shop = function()
+				local state = StaticMap:FindFirstChild("red_light_green_light_minigame_state")
+				local map = GetInteriorBlueprint()
+				if map and state then
+					if map.Name == "Lunar2024Shop" and state:FindFirstChild("is_game_active") and state.is_game_active.Value == true and state:FindFirstChild("players_loading") and state.players_loading.Value == false then
 						local arena = map:FindFirstChild("Arena")
 						if arena then
 							local throwables = arena:FindFirstChild("Throwables")
@@ -534,9 +546,13 @@ function module.Init(category, connections)
 								end
 							end
 						end
+					elseif string.find(map.Name, "MainMap") then
+						for _, furniture_unique in pairs(GetFurnitureByName("LNY2024KiteBox")) do
+							HousingAPI.ActivateInteriorFurniture:InvokeServer(furniture_unique, "UseBlock", nil, plr.Character)
+						end
 					end
 				end
-			}
+			end
 		}
 		
 		autoEvents = category:AddCheckbox("Auto-events")
@@ -544,17 +560,12 @@ function module.Init(category, connections)
 		
 		task.spawn(function()
 			local map
-			while task.wait(.5) and module.On do
+			while task.wait(2) and module.On do
 				if autoEvents.Checked then
-					map = GetInteriorBlueprint()
-					if map then
-						for _, eventHandler in pairs(EventHandlers) do
-							if eventHandler.TargetMap == map.Name then
-								local f, err = pcall(eventHandler.Tick)
-								if not f then
-									warn(err)
-								end
-							end
+					for _, eventHandler in pairs(EventHandlers) do
+						local f, err = pcall(eventHandler)
+						if not f then
+							warn(err)
 						end
 					end
 				else

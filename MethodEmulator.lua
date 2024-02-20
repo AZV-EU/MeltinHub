@@ -15,14 +15,14 @@ function emulator:SetMethodOverride(object, methodName, methodOverride)
 end
 
 function emulator:DeleteMethodOverride(object, methodName)
-	if ETable[object] then
+	if object and ETable[object] and methodName then
 		ETable[object].Methods[methodName] = nil
 		ETable[object].Overrides[methodName] = nil
 	end
 end
 
 function emulator:DeleteObject(object)
-	if ETable[object] then
+	if object and ETable[object] then
 		ETable[object] = nil
 	end
 end
