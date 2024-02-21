@@ -19,6 +19,8 @@ function module.Init(category, connections)
 	local HouseInteriors = game.Workspace:WaitForChild("HouseInteriors")
 	local HouseExteriors = game.Workspace:WaitForChild("HouseExteriors")
 	
+	plr:WaitForChild("PlayerScripts"):WaitForChild("BootstrapClient").Disabled = true
+	
 	local Pet = {
 		Current = nil,
 		Model = nil
@@ -572,6 +574,17 @@ function module.Init(category, connections)
 					task.wait(2)
 				end
 			end
+		end)
+	end
+	
+	do -- trading
+		local category = _G.SenHub:AddCategory("Trading")
+		
+		category:AddButton("[1] Accept Trade", function()
+			TradeAPI.AcceptNegotiation:FireServer()
+		end).Inline = true
+		category:AddButton("[2] Confirm Trade", function()
+			TradeAPI.ConfirmTrade:FireServer()
 		end)
 	end
 end
