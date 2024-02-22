@@ -581,7 +581,7 @@ function module.Init(category, connections)
 							local recipe = pots:FindFirstChildWhichIsA("Folder")
 							if recipe then
 								local potModel = recipe:FindFirstChildWhichIsA("Model")
-								if potModel and potModel:FindFirstChild("glow_circle") then
+								if potModel and potModel:FindFirstChild("GlowCircle") then
 									eventLabel:SetText("Cooking...")
 									FireDimensionAPI.CookRecipe:InvokeServer(recipe.Name)
 									task.wait(1)
