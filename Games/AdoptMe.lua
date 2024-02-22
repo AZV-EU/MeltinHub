@@ -38,7 +38,7 @@ function module.Init(category, connections)
 	_G.MethodEmulator:SetMethodOverride(ErrorReportAPI.SendUniqueError, "FireServer", function() end)
 	
 	-- daily autoaccept
-	DailyLoginAPI.ClaimDailyReward:FireServer()
+	DailyLoginAPI.ClaimDailyReward:InvokeServer()
 	
 	local LocationFunc = nil
 	for k, v in pairs(getgc()) do
