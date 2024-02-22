@@ -185,7 +185,8 @@ function module.SetEnabled(state)
 			else
 				resetFlight()
 			end
-		end, false, Enum.KeyCode.LeftControl)
+		end, true, Enum.KeyCode.LeftControl)
+		ContextActionService:SetTitle("FlightToggle", "Fly")
 		
 		respawnConn = plr.CharacterAdded:Connect(function()
 			spawn(function()
@@ -193,7 +194,7 @@ function module.SetEnabled(state)
 				local wasEnabled = module.Enabled
 				module.SetEnabled(false)
 				if wasEnabled then
-					module.SetEnabled(wasEnabled)
+					module.SetEnabled(true)
 				end
 			end)
 		end)

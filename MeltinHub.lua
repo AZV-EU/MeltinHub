@@ -1,4 +1,4 @@
-local Version = "1.8.7a"
+local Version = "1.8.7b"
 local isDev = false
 
 -- loadstring(game:HttpGet("https://raw.githubusercontent.com/Senzaa/MeltinHub/main/MeltinHub.lua", true))()
