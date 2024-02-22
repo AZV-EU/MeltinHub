@@ -514,66 +514,101 @@ function module.Init(category, connections)
 		local category = _G.SenHub:AddCategory("Events")
 		
 		local StaticMap = game.Workspace:WaitForChild("StaticMap")
-		local EventHandlers = {
-			Lunar2024Shop = function()
-				local state = StaticMap:FindFirstChild("red_light_green_light_minigame_state")
-				local map = GetInteriorBlueprint()
-				if map and state then
-					if map.Name == "Lunar2024Shop" and state:FindFirstChild("is_game_active") and state.is_game_active.Value == true and state:FindFirstChild("players_loading") and state.players_loading.Value == false then
-						local arena = map:FindFirstChild("Arena")
-						if arena then
-							local throwables = arena:FindFirstChild("Throwables")
-							if throwables then
-								local targets = {}
-								for _, throwable in pairs(throwables:GetChildren()) do
-									if throwable:IsA("Model") and throwable:GetAttribute("UserId") == plr.UserId and throwable.Name == "ThrowableGold" then
-										table.insert(targets, throwable)
-									end
-								end
-								for _, throwable in pairs(throwables:GetChildren()) do
-									if throwable:IsA("Model") and throwable:GetAttribute("UserId") == plr.UserId and throwable.Name == "ThrowableNormal" then
-										table.insert(targets, throwable)
-									end
-								end
-								if #targets > 0 then
-									local count = 0
-									for _, target in pairs(targets) do
-										MinigameAPI.MessageServer:FireServer("red_light_green_light", "attempt_pick_up", target:GetAttribute("Id"))
-										task.wait(.5)
-										count += 1
-										if count == 3 then
-											MinigameAPI.MessageServer:FireServer("red_light_green_light", "attempt_drop_off", 1)
-											task.wait(.5)
-											count = 0
-										end
-									end
-									MinigameAPI.MessageServer:FireServer("red_light_green_light", "attempt_drop_off", 1)
-								end
+		local EventHandlers = {}
+		
+		local eventLabel = category:AddLabel("Idle")
+		do
+		EventHandlers["Lunar2024Shop"] = function(map)
+			local state = StaticMap:FindFirstChild("red_light_green_light_minigame_state")
+			if state and state:FindFirstChild("is_game_active") and state.is_game_active.Value == true and state:FindFirstChild("players_loading") and state.players_loading.Value == false then
+				local arena = map:FindFirstChild("Arena")
+				if arena then
+					local throwables = arena:FindFirstChild("Throwables")
+					if throwables then
+						local targets = {}
+						for _, throwable in pairs(throwables:GetChildren()) do
+							if throwable:IsA("Model") and throwable:GetAttribute("UserId") == plr.UserId and throwable.Name == "ThrowableGold" then
+								table.insert(targets, throwable)
 							end
 						end
-					elseif string.find(map.Name, "MainMap") then
-						for _, furniture_unique in pairs(GetFurnitureByName("LNY2024KiteBox")) do
-							HousingAPI.ActivateInteriorFurniture:InvokeServer(furniture_unique, "UseBlock", nil, plr.Character)
+						for _, throwable in pairs(throwables:GetChildren()) do
+							if throwable:IsA("Model") and throwable:GetAttribute("UserId") == plr.UserId and throwable.Name == "ThrowableNormal" then
+								table.insert(targets, throwable)
+							end
+						end
+						if #targets > 0 then
+							local count = 0
+							for _, target in pairs(targets) do
+								MinigameAPI.MessageServer:FireServer("red_light_green_light", "attempt_pick_up", target:GetAttribute("Id"))
+								task.wait(.5)
+								count += 1
+								if count == 3 then
+									MinigameAPI.MessageServer:FireServer("red_light_green_light", "attempt_drop_off", 1)
+									task.wait(.5)
+									count = 0
+								end
+							end
+							MinigameAPI.MessageServer:FireServer("red_light_green_light", "attempt_drop_off", 1)
+						end
+					end
+				end
+			elseif string.find(map.Name, "MainMap") then
+				for _, furniture_unique in pairs(GetFurnitureByName("LNY2024KiteBox")) do
+					HousingAPI.ActivateInteriorFurniture:InvokeServer(furniture_unique, "UseBlock", nil, plr.Character)
+				end
+			end
+		end
+		end
+		
+		do
+			EventHandlers["FireDimension"] = function()
+				local map = GetInteriorBlueprint()
+				if map and map.Name == "FireDimension" then
+					local cooking = map:FindFirstChild("Cooking")
+					if cooking then
+						local locations = cooking:FindFirstChild("IngredientLocations")
+						local pots = cooking:FindFirstChild("Pots")
+						if locations and pots then
+							for _,fruitDir in pairs(locations:GetChildren()) do
+								for _,fruitModel in pairs(fruitDir:GetChildren()) do
+									if fruitModel:FindFirstChild("Fruit") then
+										eventLabel:SetText("Collecting '" .. fruitDir.Name .. "' [" .. fruitModel.Name .. "] ...")
+										FireDimensionAPI.PickFruit:InvokeServer(fruitDir.Name:lower(), tonumber(fruitModel.Name))
+										task.wait(.2)
+									end
+								end
+							end
+							local recipe = pots:FindFirstChildWhichIsA("Folder")
+							if recipe then
+								local potModel = recipe:FindFirstChildWhichIsA("Model")
+								if potModel and potModel:FindFirstChild("glow_circle") then
+									eventLabel:SetText("Cooking...")
+									FireDimensionAPI.CookRecipe:InvokeServer(recipe.Name)
+									task.wait(1)
+								end
+							end
 						end
 					end
 				end
 			end
-		}
+		end
 		
 		autoEvents = category:AddCheckbox("Auto-events")
 		autoEvents:SetChecked(true)
 		
 		task.spawn(function()
-			local map
+			local map, eventHandler
 			while task.wait(2) and module.On do
-				if autoEvents.Checked then
-					for _, eventHandler in pairs(EventHandlers) do
-						local f, err = pcall(eventHandler)
-						if not f then
-							warn(err)
-						end
+				map = GetInteriorBlueprint()
+				if autoEvents.Checked and map and EventHandlers[map.Name] then
+					eventLabel:SetText("Event: " .. map.Name)
+					local f, err = pcall(EventHandlers[map.Name])
+					if not f then
+						eventLabel:SetText("HANDLER ERROR!")
+						warn(err)
 					end
 				else
+					eventLabel:SetText("Idle")
 					task.wait(2)
 				end
 			end

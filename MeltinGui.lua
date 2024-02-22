@@ -265,7 +265,7 @@ function module.New(title, startPosition)
 			end
 		end)
 		if not f or not __defaultPosY then
-			warn("Outdated auto-detect code for default Y position. Reverting to default.")
+			print("Could not get Y height post:", err)
 		end
 	end
 
