@@ -185,7 +185,7 @@ function module.SetEnabled(state)
 			else
 				resetFlight()
 			end
-		end, true, Enum.KeyCode.LeftControl)
+		end, true, Enum.KeyCode.LeftControl, Enum.KeyCode.ButtonR2)
 		ContextActionService:SetTitle("FlightToggle", "Fly")
 		
 		respawnConn = plr.CharacterAdded:Connect(function()

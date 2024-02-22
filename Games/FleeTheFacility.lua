@@ -12,6 +12,7 @@ local originalFunc
 function module.Init(category, connections)
 	--_G.IndexEmulator:SetKeyValue(_G.SafeGetService("UserInputService"), "TouchEnabled", false)
 	local UserInputService = _G.SafeGetService("UserInputService")
+	local ContextActionService = _G.SafeGetService("ContextActionService")
 	local ReplicatedStorage = _G.SafeGetService("ReplicatedStorage")
 	local IsGameActive = ReplicatedStorage:WaitForChild("IsGameActive")
 	local CurrentMap = ReplicatedStorage:WaitForChild("CurrentMap")
@@ -121,6 +122,12 @@ function module.Init(category, connections)
 			end
 		end
 	end
+	
+	ContextActionService:BindAction("Enhanced_Attack", function(_, inputState, input)
+		if betterHammer.Checked then
+			Attack()
+		end
+	end, false, Enum.KeyCode.ButtonX)
 	
 	table.insert(connections, UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		if betterHammer.Checked and not gameProcessed then

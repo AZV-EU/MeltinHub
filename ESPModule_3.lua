@@ -233,13 +233,17 @@ function _G.ESPModule_Update()
 						end
 						if target:IsA("Player") then
 							if target.Character then
-								target.Character.Parent = espData.Storage
+								pcall(function()
+									target.Character.Parent = espData.Storage
+								end)
 							end
 						elseif target.Parent ~= espData.Storage and target.Parent ~= nil then
 							task.spawn(function()
-								target.Parent = nil
-								task.wait(.1)
-								target.Parent = espData.Storage
+								pcall(function()
+									target.Parent = nil
+									task.wait(.1)
+									target.Parent = espData.Storage
+								end)
 							end)
 						end
 					end
@@ -317,13 +321,17 @@ function module.SetEnabled(state)
 				if info.OriginalParent ~= nil then
 					if target:IsA("Player") then
 						if target.Character then
-							target.Character.Parent = info.OriginalParent
+							pcall(function()
+								target.Character.Parent = info.OriginalParent
+							end)
 						end
 					else
 						task.spawn(function()
-							target.Parent = nil
-							task.wait(.1)
-							target.Parent = info.OriginalParent
+							pcall(function()
+								target.Parent = nil
+								task.wait(.1)
+								target.Parent = info.OriginalParent
+							end)
 						end)
 					end
 				--[[else
