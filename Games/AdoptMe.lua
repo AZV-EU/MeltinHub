@@ -19,7 +19,7 @@ function module.Init(category, connections)
 	local HouseInteriors = game.Workspace:WaitForChild("HouseInteriors")
 	local HouseExteriors = game.Workspace:WaitForChild("HouseExteriors")
 	
-	plr:WaitForChild("PlayerScripts"):WaitForChild("BootstrapClient").Disabled = true
+	--plr:WaitForChild("PlayerScripts"):WaitForChild("BootstrapClient").Disabled = true
 	
 	local Pet = {
 		Current = nil,
