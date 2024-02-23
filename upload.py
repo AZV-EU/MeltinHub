@@ -13,9 +13,9 @@ with open("MeltinHub.lua", "w") as f:
     f.writelines(lines)
 
 print(f'Uploading version = {version}')
-print(subprocess.check_output(["git", "add", "."]))
-print(subprocess.check_output(["git", "commit", "-m", f"\"Update version {version}\""]))
-print(subprocess.check_output(["git", "push"]))
+subprocess.run(["git", "add", "."])
+subprocess.run(["git", "commit", "-m", f"\"Update version {version}\""])
+subprocess.run(["git", "push"])
 
 lines[1] = "_G.MeltinENV = 1\n"
 
