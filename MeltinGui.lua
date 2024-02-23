@@ -1,5 +1,5 @@
 local module = {
-	Version = "0.3a"
+	Version = "1.0"
 }
 
 local UserInputService = game:GetService("UserInputService")
@@ -257,17 +257,12 @@ function module.New(title, startPosition)
 	local HoverIndex = 0
 	
 	local __defaultPosY = nil
-	do
-		local f, err = pcall(function()
-			if game.CoreGui:FindFirstChild("PlayerList") then
-				__defaultPosY = game.CoreGui.PlayerList.PlayerListMaster.AbsolutePosition.Y +
-					game.CoreGui.PlayerList.PlayerListMaster.AbsoluteSize.Y + 50
-			end
-		end)
-		if not f or not __defaultPosY then
-			print("Could not get Y height post:", err)
+	pcall(function()
+		if game.CoreGui:FindFirstChild("PlayerList") then
+			__defaultPosY = game.CoreGui.PlayerList.PlayerListMaster.AbsolutePosition.Y +
+				game.CoreGui.PlayerList.PlayerListMaster.AbsoluteSize.Y + 50
 		end
-	end
+	end)
 
 	local properties = {
 		Title = title or "New Frame",

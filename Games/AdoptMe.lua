@@ -10,8 +10,11 @@ function module.PreInit()
 end
 
 function module.Init(category, connections)
+	local ReplicatedStorage = _G.SafeGetService("ReplicatedStorage")
+	local PlayerGui = plr:WaitForChild("PlayerGui")
+	
 	local ailments = plr.PlayerGui:WaitForChild("AilmentsMonitorApp"):WaitForChild("Ailments")
-	local clientModules = _G.SafeGetService("ReplicatedStorage"):WaitForChild("ClientModules")
+	local clientModules = ReplicatedStorage:WaitForChild("ClientModules")
 	
 	local clientData = require(clientModules:WaitForChild("Core"):WaitForChild("ClientData"))
 	
@@ -27,59 +30,62 @@ function module.Init(category, connections)
 	}
 	
 	-- API deobfuscator
-	for k,v in pairs(getupvalue(require(_G.SafeGetService("ReplicatedStorage").Fsys).load("RouterClient").init, 4)) do
-		local cls, fnName = unpack(string.split(k,"/"))
-		if not getgenv()[cls] then
-			getgenv()[cls] = {}
+	local debugApiTable = {}
+	do
+		local env = getfenv(module.Init)
+		for k,v in pairs(getupvalue(require(ReplicatedStorage.Fsys).load("RouterClient").init, 4)) do
+			local cls, fnName = unpack(string.split(k,"/"))
+			if not env[cls] then
+				env[cls] = {}
+			end
+			env[cls][fnName] = v
+			if _G.MeltinENV == 1 then
+				if not debugApiTable[cls] then
+					debugApiTable[cls] = {}
+				end
+				table.insert(debugApiTable[cls], fnName)
+			end
+			v.Name = k
 		end
-		getgenv()[cls][fnName] = v
-		v.Name = k
 	end
-	_G.MethodEmulator:SetMethodOverride(ErrorReportAPI.SendUniqueError, "FireServer", function() end)
 	
 	-- daily autoaccept
 	DailyLoginAPI.ClaimDailyReward:InvokeServer()
 	
-	local LocationFunc = nil
-	for k, v in pairs(getgc()) do
-		if type(v) == "function" then
-			if getfenv(v).script == _G.SafeGetService("ReplicatedStorage").ClientModules.Core.InteriorsM.InteriorsM then
-				if table.find(getconstants(v), "LocationAPI/SetLocation") then
+	local getconstants = getconstants or debug.getconstants
+	local setconstant = setconstant or debug.setconstant
+	
+	local LocationFunc
+	do
+		local sc
+		for k,v in pairs(getgc()) do
+			if type(v) == "function" then
+				sc = getfenv(v).script
+				if not LocationFunc and sc.Name == "InteriorsM" and
+					table.find(getconstants(v), "LocationAPI/SetLocation") then
 					LocationFunc = v
-					break
+				elseif sc.Name == "SendClientErrorReportsToServer" then
+					for idx,constant in pairs(getconstants(v)) do
+						if constant == "ErrorReportAPI/SendUniqueError" then
+							setconstant(v,idx,"")
+						end
+					end
 				end
 			end
 		end
 	end
+	
 	if not LocationFunc then
 		warn("Could not find location func")
 		return
 	end
-	
-	--[[do
-		local test = {}
-		for k, v in pairs(getgc()) do
-			if type(v) == "function" then
-				pcall(function()
-					local constants = getconstants(v)
-					if table.find(constants, "LocationAPI/SetLocation") then
-						
-					end
-				end)
-			end
-		end
-		setclipboard(_G.Discover(test, 8))
-	end]]
 	
 	local function GetClientData()
 		return clientData.get_data()[plr.Name]
 	end
 
 	local function SetLocation(locationName, targetModelName, metadata)
-		local O = get_thread_identity()
-		set_thread_identity(2)
-		LocationFunc(locationName, targetModelName, metadata)
-		set_thread_identity(O)
+		LocationAPI.SetLocation:FireServer(locationName, targetModelName, metadata or {})
 	end
 	
 	local function GetInteriorBlueprint()
@@ -117,7 +123,7 @@ function module.Init(category, connections)
 		if not IsAtPlace(shopName) then
 			while not IsAtPlace(shopName) and task.wait(1) and module.On do
 				_G.SetCharAnchored(true)
-				SetLocation(shopName, "MainDoor", {})
+				SetLocation(shopName, "MainDoor")
 				_G.SetCharAnchored(false)
 			end
 			task.wait(3)
@@ -128,7 +134,7 @@ function module.Init(category, connections)
 		if not IsAtPlace(shopName) then
 			while not IsAtPlace("MainMap") and task.wait(1) and module.On do
 				_G.SetCharAnchored(true)
-			SetLocation("MainMap", "Neighborhood/MainDoor", {})
+			SetLocation("MainMap", "Neighborhood/MainDoor")
 				_G.SetCharAnchored(false)
 			end
 			task.wait(3)
@@ -506,10 +512,6 @@ function module.Init(category, connections)
 	category:AddButton("TP Home", TeleportHome).Inline = true
 	category:AddButton("TP MainMap", TeleportToMainMap)
 	
-	category:AddCheckbox("Mute Party Invites", function(state)
-		plr:WaitForChild("PlayerGui"):WaitForChild("PartyInvitationApp").Enabled = not state
-	end):SetChecked(true)
-	
 	do -- events
 		local category = _G.SenHub:AddCategory("Events")
 		
@@ -518,74 +520,67 @@ function module.Init(category, connections)
 		
 		local eventLabel = category:AddLabel("Idle")
 		do
-		EventHandlers["Lunar2024Shop"] = function(map)
-			local state = StaticMap:FindFirstChild("red_light_green_light_minigame_state")
-			if state and state:FindFirstChild("is_game_active") and state.is_game_active.Value == true and state:FindFirstChild("players_loading") and state.players_loading.Value == false then
-				local arena = map:FindFirstChild("Arena")
-				if arena then
-					local throwables = arena:FindFirstChild("Throwables")
-					if throwables then
-						local targets = {}
-						for _, throwable in pairs(throwables:GetChildren()) do
-							if throwable:IsA("Model") and throwable:GetAttribute("UserId") == plr.UserId and throwable.Name == "ThrowableGold" then
-								table.insert(targets, throwable)
-							end
-						end
-						for _, throwable in pairs(throwables:GetChildren()) do
-							if throwable:IsA("Model") and throwable:GetAttribute("UserId") == plr.UserId and throwable.Name == "ThrowableNormal" then
-								table.insert(targets, throwable)
-							end
-						end
-						if #targets > 0 then
-							local count = 0
-							for _, target in pairs(targets) do
-								MinigameAPI.MessageServer:FireServer("red_light_green_light", "attempt_pick_up", target:GetAttribute("Id"))
-								task.wait(.5)
-								count += 1
-								if count == 3 then
-									MinigameAPI.MessageServer:FireServer("red_light_green_light", "attempt_drop_off", 1)
-									task.wait(.5)
-									count = 0
+			EventHandlers["Lunar2024Shop"] = function(map)
+				local state = StaticMap:FindFirstChild("red_light_green_light_minigame_state")
+				if state and state:FindFirstChild("is_game_active") and state.is_game_active.Value == true and state:FindFirstChild("players_loading") and state.players_loading.Value == false then
+					local arena = map:FindFirstChild("Arena")
+					if arena then
+						local throwables = arena:FindFirstChild("Throwables")
+						if throwables then
+							local targets = {}
+							for _, throwable in pairs(throwables:GetChildren()) do
+								if throwable:IsA("Model") and throwable:GetAttribute("UserId") == plr.UserId and throwable.Name == "ThrowableGold" then
+									table.insert(targets, throwable)
 								end
 							end
-							MinigameAPI.MessageServer:FireServer("red_light_green_light", "attempt_drop_off", 1)
+							for _, throwable in pairs(throwables:GetChildren()) do
+								if throwable:IsA("Model") and throwable:GetAttribute("UserId") == plr.UserId and throwable.Name == "ThrowableNormal" then
+									table.insert(targets, throwable)
+								end
+							end
+							if #targets > 0 then
+								local count = 0
+								for _, target in pairs(targets) do
+									MinigameAPI.MessageServer:FireServer("red_light_green_light", "attempt_pick_up", target:GetAttribute("Id"))
+									task.wait(.5)
+									count += 1
+									if count == 3 then
+										MinigameAPI.MessageServer:FireServer("red_light_green_light", "attempt_drop_off", 1)
+										task.wait(.5)
+										count = 0
+									end
+								end
+								MinigameAPI.MessageServer:FireServer("red_light_green_light", "attempt_drop_off", 1)
+							end
 						end
 					end
-				end
-			elseif string.find(map.Name, "MainMap") then
-				for _, furniture_unique in pairs(GetFurnitureByName("LNY2024KiteBox")) do
-					HousingAPI.ActivateInteriorFurniture:InvokeServer(furniture_unique, "UseBlock", nil, plr.Character)
+				elseif string.find(map.Name, "MainMap") then
+					for _, furniture_unique in pairs(GetFurnitureByName("LNY2024KiteBox")) do
+						HousingAPI.ActivateInteriorFurniture:InvokeServer(furniture_unique, "UseBlock", nil, plr.Character)
+					end
 				end
 			end
 		end
-		end
 		
 		do
-			EventHandlers["FireDimension"] = function()
-				local map = GetInteriorBlueprint()
-				if map and map.Name == "FireDimension" then
-					local cooking = map:FindFirstChild("Cooking")
-					if cooking then
-						local locations = cooking:FindFirstChild("IngredientLocations")
-						local pots = cooking:FindFirstChild("Pots")
-						if locations and pots then
-							for _,fruitDir in pairs(locations:GetChildren()) do
-								for _,fruitModel in pairs(fruitDir:GetChildren()) do
-									if fruitModel:FindFirstChild("Fruit") then
-										eventLabel:SetText("Collecting '" .. fruitDir.Name .. "' [" .. fruitModel.Name .. "] ...")
-										FireDimensionAPI.PickFruit:InvokeServer(fruitDir.Name:lower(), tonumber(fruitModel.Name))
-										task.wait(.2)
-									end
+			EventHandlers["FireDimension"] = function(map)
+				local cooking = map:FindFirstChild("Cooking")
+				if cooking then
+					local locations = cooking:FindFirstChild("IngredientLocations")
+					local pots = cooking:FindFirstChild("Pots")
+					if locations and pots then
+						for _,fruitDir in pairs(locations:GetChildren()) do
+							for _,fruitModel in pairs(fruitDir:GetChildren()) do
+								if fruitModel:FindFirstChild("Fruit") then
+									FireDimensionAPI.PickFruit:InvokeServer(fruitDir.Name:lower(), tonumber(fruitModel.Name))
 								end
 							end
-							local recipe = pots:FindFirstChildWhichIsA("Folder")
-							if recipe then
-								local potModel = recipe:FindFirstChildWhichIsA("Model")
-								if potModel and potModel:FindFirstChild("GlowCircle") then
-									eventLabel:SetText("Cooking...")
-									FireDimensionAPI.CookRecipe:InvokeServer(recipe.Name)
-									task.wait(1)
-								end
+						end
+						local recipe = pots:FindFirstChildWhichIsA("Folder")
+						if recipe then
+							local potModel = recipe:FindFirstChildWhichIsA("Model")
+							if potModel and potModel:FindFirstChild("GlowCircle") then
+								FireDimensionAPI.CookRecipe:InvokeServer(recipe.Name)
 							end
 						end
 					end
@@ -606,6 +601,7 @@ function module.Init(category, connections)
 					if not f then
 						eventLabel:SetText("HANDLER ERROR!")
 						warn(err)
+						task.wait(5)
 					end
 				else
 					eventLabel:SetText("Idle")
@@ -623,6 +619,19 @@ function module.Init(category, connections)
 		end).Inline = true
 		category:AddButton("[2] Confirm Trade", function()
 			TradeAPI.ConfirmTrade:FireServer()
+		end)
+		category:AddButton("Transfer all", function()
+			
+		end)
+	end
+	
+	if _G.MeltinENV == 1 then
+		local category = _G.SenHub:AddCategory("DEV")
+		category:AddButton("Copy client data", function()
+			setclipboard(_G.Discover(GetClientData(), 5))
+		end)
+		category:AddButton("Copy API", function()
+			setclipboard(_G.Discover(debugApiTable))
 		end)
 	end
 end
