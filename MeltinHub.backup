@@ -1,4 +1,4 @@
-local Version = "1.9.0"
+local Version = "1.9.1"
 _G.MeltinENV = 1
 -- ENVIRONMENT: 0 = public, 1 = dev (local)
 
@@ -729,14 +729,14 @@ do -- 								CHARACTER CATEGORY
 				end
 			end
 			table.insert(connections, human:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
-				if freezeValues.Checked then
+				if freezeValues.Checked and human.WalkSpeed ~= speedSlider.Value then
 					human.WalkSpeed = speedSlider.Value
 				else
 					speedSlider:SetValue(human.WalkSpeed)
 				end
 			end))
 			table.insert(connections, human:GetPropertyChangedSignal("JumpPower"):Connect(function()
-				if useJP then
+				if useJP and human.JumpPower ~= jumpSlider.Value then
 					if freezeValues.Checked then
 						human.JumpPower.Value = jumpSlider.Value
 					else
@@ -745,7 +745,7 @@ do -- 								CHARACTER CATEGORY
 				end
 			end))
 			table.insert(connections, human:GetPropertyChangedSignal("JumpHeight"):Connect(function()
-				if not useJP then
+				if not useJP and human.JumpHeight ~= jumpSlider.Value then
 					if freezeValues.Checked then
 						human.JumpHeight.Value = jumpSlider.Value
 					else
