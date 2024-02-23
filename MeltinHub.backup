@@ -1,5 +1,5 @@
 local Version = "1.9.0"
-_G.MeltinENV = 0
+_G.MeltinENV = 1
 -- ENVIRONMENT: 0 = public, 1 = dev (local)
 
 -- loadstring(game:HttpGet("https://raw.githubusercontent.com/Senzaa/MeltinHub/main/MeltinHub.lua", true))()
