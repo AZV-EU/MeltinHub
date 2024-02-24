@@ -85,16 +85,19 @@ function module.Init(category, connections)
 	end
 
 	local function SetLocation(locationName, targetModelName, metadata)
-		LocationAPI.SetLocation:FireServer(locationName, targetModelName, metadata or {})
+		local ti = get_thread_identity()
+		set_thread_identity(2)
+		LocationFunc(locationName, targetModelName, metadata or {})
+		set_thread_identity(ti)
 	end
 	
 	local function GetInteriorBlueprint()
 		return HouseInteriors.blueprint:FindFirstChildWhichIsA("Model") or game.Workspace.Interiors:FindFirstChildWhichIsA("Model")
 	end
 	
-	local function IsAtPlace(placeName)
+	local function IsAtPlace(placeName, use_find)
 		local bp = GetInteriorBlueprint()
-		return bp and bp.Name == placeName
+		return bp and (use_find and bp.Name:find(placeName) or bp.Name == placeName)
 	end
 	
 	local function TeleportHome()
@@ -131,10 +134,11 @@ function module.Init(category, connections)
 	end
 	
 	local function TeleportToMainMap()
-		if not IsAtPlace(shopName) then
-			while not IsAtPlace("MainMap") and task.wait(1) and module.On do
+		if not IsAtPlace("MainMap", true) then
+			while not IsAtPlace("MainMap", true) and task.wait(1) and module.On do
 				_G.SetCharAnchored(true)
-			SetLocation("MainMap", "Neighborhood/MainDoor")
+				_G.TeleportPlayerTo(game.Workspace.StaticMap.TeleportLocations.Town.Position)
+				SetLocation("MainMap", "Neighborhood/MainDoor")
 				_G.SetCharAnchored(false)
 			end
 			task.wait(3)
@@ -145,9 +149,22 @@ function module.Init(category, connections)
 		local pets = GetClientData().inventory.pets or {}
 		local myPets = {}
 		for _,pet in pairs(pets) do
-			myPets[pet.unique] = pet
+			if pet.id ~= "practice_dog" and pet.Name:sub(-4) ~= "_egg" then
+				myPets[pet.unique] = pet
+			end
 		end
 		return myPets
+	end
+	
+	local function GetEggs()
+		local pets = GetClientData().inventory.pets or {}
+		local myEggs = {}
+		for _,pet in pairs(pets) do
+			if pet.Name:sub(-4) == "_egg" then
+				myEggs[pet.unique] = pet
+			end
+		end
+		return myEggs
 	end
 	
 	local function GetEquippedPet()
@@ -203,7 +220,7 @@ function module.Init(category, connections)
 	local function AutoSelectPet()
 		local oldestPet, oldestAge = nil, 0
 		for _,pet in pairs(GetPets()) do
-			if pet.id ~= "practice_dog" and pet.properties.age < 6 then
+			if pet.properties.age < 6 then
 				if not oldestPet or pet.properties.age > oldestAge then
 					oldestPet = pet
 					oldestAge = pet.properties.age
@@ -512,6 +529,9 @@ function module.Init(category, connections)
 	category:AddButton("TP Home", TeleportHome).Inline = true
 	category:AddButton("TP MainMap", TeleportToMainMap)
 	
+	local EventItems = {
+		["fire_dimension_2024_burnt_bites_bait"] = true
+	}
 	do -- events
 		local category = _G.SenHub:AddCategory("Events")
 		
@@ -589,7 +609,7 @@ function module.Init(category, connections)
 		end
 		
 		autoEvents = category:AddCheckbox("Auto-events")
-		autoEvents:SetChecked(true)
+		--autoEvents:SetChecked(true)
 		
 		task.spawn(function()
 			local map, eventHandler
@@ -597,7 +617,7 @@ function module.Init(category, connections)
 				map = GetInteriorBlueprint()
 				if autoEvents.Checked and map and EventHandlers[map.Name] then
 					eventLabel:SetText("Event: " .. map.Name)
-					local f, err = pcall(EventHandlers[map.Name])
+					local f, err = pcall(EventHandlers[map.Name], map)
 					if not f then
 						eventLabel:SetText("HANDLER ERROR!")
 						warn(err)
@@ -614,21 +634,185 @@ function module.Init(category, connections)
 	do -- trading
 		local category = _G.SenHub:AddCategory("Trading")
 		
-		category:AddButton("[1] Accept Trade", function()
-			TradeAPI.AcceptNegotiation:FireServer()
-		end).Inline = true
-		category:AddButton("[2] Confirm Trade", function()
-			TradeAPI.ConfirmTrade:FireServer()
+		local playerSelectionPopup, selectPlayerBtn
+		local masterPlayer = nil
+		local function UpdatePlayersList()
+			if playerSelectionPopup then
+				local list = {}
+				for k,v in pairs(game.Players:GetPlayers()) do
+					if v ~= plr then
+						local espData = _G.ESPModule_GetESPData(v)
+						table.insert(list, {
+							Value = v,
+							Text = v.DisplayName .. "\n(@" .. v.Name .. ")",
+							Image = function()
+								return game.Players:GetUserThumbnailAsync(v.UserId, Enum.ThumbnailType.AvatarBust, Enum.ThumbnailSize.Size180x180)
+							end,
+							Color = espData and espData.Color or v.TeamColor.Color
+						})
+					end
+				end
+				table.sort(list, function(a,b)
+					return a.Text < b.Text
+				end)
+				playerSelectionPopup.UpdateList(list)
+			end
+			masterPlayer = (masterPlayer and masterPlayer.Parent) and masterPlayer or nil
+			selectPlayerBtn:SetText(masterPlayer and masterPlayer.DisplayName or "Select Trade Target")
+		end
+		
+		selectPlayerBtn	= category:AddButton("Select Trade Target", function()
+			selectPlayerBtn:SetEnabled(false)
+			playerSelectionPopup = _G.SenHub:CreatePopup("GridList", {
+				Title = "Player Selection",
+				List = nil,
+				UserChoice = function(result)
+					masterPlayer = result
+					local espData = masterPlayer and _G.ESPModule_GetESPData(masterPlayer) or nil
+					selectPlayerBtn:SetText(masterPlayer and masterPlayer.DisplayName or "Select Trade Target")
+					selectPlayerBtn._GuiObject.TextColor3 = espData and espData.Color or (masterPlayer and masterPlayer.TeamColor.Color or Color3.new(1, 1, 1))
+					selectPlayerBtn:SetEnabled(true)
+					playerSelectionPopup = nil
+				end
+			})
+			UpdatePlayersList()
 		end)
-		category:AddButton("Transfer all", function()
-			
+		
+		table.insert(connections, game.Players.PlayerAdded:Connect(function()
+			UpdatePlayersList()
+		end))
+		table.insert(connections, game.Players.PlayerRemoving:Connect(function()
+			UpdatePlayersList()
+		end))
+		
+		local transferCategory = category:AddDropdown("Transfer Category", {"Everything", "Pets", "Adult Pets", "Eggs", "Gifts", "Event Items"}, 6)
+		
+		do
+			local transferAll
+			local transfering = false
+			transferAll = category:AddButton("Transfer To Player", function()
+				if masterPlayer then
+					if not transfering then
+						transfering = true
+						if not PlayerGui.TradeApp.Frame.Visible then
+							transferAll:SetText("Requesting trade...")
+							repeat
+								TradeAPI.SendTradeRequest:FireServer(masterPlayer)
+								task.wait(1)
+							until PlayerGui.TradeApp.Frame.Visible or not masterPlayer or not transfering or not module.On
+						end
+						if transfering and PlayerGui.TradeApp.Frame.Visible then
+							transferAll:SetText("Transfering...")
+							
+							local all = transferCategory.SelectedOption == 1
+							
+							if all or transferCategory.SelectedOption == "Pets" then
+								for pet_unique,_ in pairs(GetPets()) do
+									TradeAPI.AddItemToOffer:FireServer(pet_unique)
+								end
+							end
+							
+							if transferCategory.SelectedOption == "Adult Pets" then
+								for pet_unique,petData in pairs(GetPets()) do
+									if petData.properties.age == 6 then
+										TradeAPI.AddItemToOffer:FireServer(pet_unique)
+									end
+								end
+							end
+							
+							if transferCategory.SelectedOption == "Eggs" then
+								for egg_unique,_ in pairs(GetEggs()) do
+									TradeAPI.AddItemToOffer:FireServer(egg_unique)
+								end
+							end
+							
+							if all or transferCategory.SelectedOption == "Gifts" then
+								for k,v in pairs(GetClientData().inventory.gifts) do
+									TradeAPI.AddItemToOffer:FireServer(v.unique)
+								end
+							end
+							
+							if all or transferCategory.SelectedOption == "Event Items" then
+								for _,category in pairs(GetClientData().inventory) do
+									if type(category) == "table" then
+										for _,obj in pairs(category) do
+											if obj.id and obj.unique and EventItems[obj.id] then
+												TradeAPI.AddItemToOffer:FireServer(obj.unique)
+											end
+										end
+									end
+								end
+							end
+							
+							transferAll:SetText("Waiting for accept...")
+							
+							repeat
+								task.wait(1)
+								TradeAPI.AcceptNegotiation:FireServer()
+								TradeAPI.ConfirmTrade:FireServer()
+							until not PlayerGui.TradeApp.Frame.Visible or not masterPlayer or not transfering or not module.On
+							
+							task.wait(1)
+							
+							if PlayerGui.DialogApp.Dialog.NormalDialog.Buttons:FindFirstChild("ButtonTemplate") then
+								for _,v in pairs(getconnections(PlayerGui.DialogApp.Dialog.NormalDialog.Buttons.ButtonTemplate.MouseButton1Click)) do
+									--v.Function()
+									v:Fire()
+								end
+							end
+						end
+					else
+						transfering = false
+					end
+				end
+				transferAll:SetText("Transfer To Player")
+			end)
+		end
+		
+		local autoAccept
+		autoAccept = category:AddCheckbox("Auto-accept trades", function(state)
+			if state then
+				while autoAccept.Checked and module.On and task.wait(2) do
+					for k,v in pairs(game.Players:GetPlayers()) do
+						if v ~= plr then
+							TradeAPI.AcceptOrDeclineTradeRequest:InvokeServer(v,true)
+						end
+					end
+					
+					repeat
+						task.wait(1)
+						TradeAPI.AcceptNegotiation:FireServer()
+						TradeAPI.ConfirmTrade:FireServer()
+					until not PlayerGui.TradeApp.Frame.Visible or not masterPlayer or not transfering or not module.On
+					
+					if PlayerGui.DialogApp.Dialog.NormalDialog.Buttons:FindFirstChild("ButtonTemplate") then
+						for _,v in pairs(getconnections(PlayerGui.DialogApp.Dialog.NormalDialog.Buttons.ButtonTemplate.MouseButton1Click)) do
+							--v.Function()
+							v:Fire()
+						end
+					end
+				end
+			end
+		end)
+		
+		category:AddLabel("Bot-preps")
+		
+		category:AddButton("Get Trading License", function()
+			TradeAPI.BeginQuiz:FireServer()
+			for i,v in pairs(getgc(true)) do
+				if type(v) == "table" and rawget(v,"question_index") then
+					for i,v in pairs(v.quiz) do
+						TradeAPI.AnswerQuizQuestion:FireServer(v.answer)
+					end 
+				end 
+			end 
 		end)
 	end
 	
 	if _G.MeltinENV == 1 then
 		local category = _G.SenHub:AddCategory("DEV")
 		category:AddButton("Copy client data", function()
-			setclipboard(_G.Discover(GetClientData(), 5))
+			setclipboard(_G.Discover(GetClientData(), 6))
 		end)
 		category:AddButton("Copy API", function()
 			setclipboard(_G.Discover(debugApiTable))

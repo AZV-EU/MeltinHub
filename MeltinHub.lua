@@ -1,4 +1,4 @@
-local Version = "1.9.1"
+local Version = "1.9.2"
 _G.MeltinENV = 0
 -- ENVIRONMENT: 0 = public, 1 = dev (local)
 
@@ -15,9 +15,6 @@ local isDev = _G.MeltinENV == 1
 local GithubUrl = "https://raw.githubusercontent.com/Senzaa/MeltinHub/main/"
 local DevUrl = "http://azv.ddns.net/MeltinHub/"
 local BaseUrl = isDev and DevUrl or GithubUrl
-
--- Common anti-cheats bypass
-loadstring(game:HttpGet(BaseUrl .. "AnticheatBypass.lua", true))()
 
 if not cloneref then
 	loadstring(game:HttpGet("https://raw.githubusercontent.com/Babyhamsta/RBLX_Scripts/main/Universal/CloneRef.lua", true))()
@@ -46,9 +43,6 @@ do -- prevent loggers
 end
 
 print("MeltinHub " .. Version .. ", Game ID =", game.GameId)
-if isDev then
-	warn("MeltinHub is in Development mode!")
-end
 
 local plr = _G.SafeGetService("Players").LocalPlayer
 
@@ -149,14 +143,16 @@ end
 
 setreadonly(string, false)
 function string.NeedsQuotas(self)
-	return not self:match("^%a[%a%d_]*$")
+	return not self:match("^_*%a[%a%d_]*$")
 end
 setreadonly(string, true)
 
 function _G.Stringify(obj, no_quotas)
 	if not obj then return "nil" end
-	if typeof(obj) == "string" then
-		return no_quotas and obj or '"' .. obj .. '"'
+	if type(obj) == "string" then
+		return obj:find("\n") and string.format("[[%s]]", obj) or (no_quotas and obj or string.format("\"%s\"", obj))
+	elseif type(obj) == "number" then
+		return tostring(obj)
 	elseif type(obj) == "userdata" then
 		if typeof(obj) ~= "Instance" then
 			return typeof(obj) .. ".new(" .. tostring(obj) .. ")"
@@ -165,14 +161,20 @@ function _G.Stringify(obj, no_quotas)
 			local instance = obj
 			local instName
 			while instance ~= nil do
+				instName = instance.Name
 				if instance == game then
 					table.insert(parts, 1, "game")
-				else
-					instName = instance.Name
+				elseif instance.Parent == game.Parent or instance.Parent == nil then
 					if instName:NeedsQuotas() then
-						table.insert(parts, 1, string.format("\"%s\"", instName))
+						table.insert(parts, 1, string.format("[\"%s\"]", instName))
 					else
 						table.insert(parts, 1, instName)
+					end
+				else
+					if instName:NeedsQuotas() then
+						table.insert(parts, 1, string.format("[\"%s\"]", instName))
+					else
+						table.insert(parts, 1, string.format(".%s", instName))
 					end
 				end
 				instance = instance.Parent
@@ -180,7 +182,7 @@ function _G.Stringify(obj, no_quotas)
 			return table.concat(parts, "")
 		end
 	end
-	return tostring(obj)
+	return no_quotas and tostring(obj) or (tostring(obj):NeedsQuotas() and string.format("\"%s\"", tostring(obj)) or tostring(obj))
 end
 
 do
@@ -194,10 +196,12 @@ do
 	end
 	
 	local visited = {}
+	local reachedMemoryLimit = false
 	function _G.Discover(obj, maxDepth, depth)
 		depth = depth or 0
 		if depth == 0 then
 			visited = {}
+			reachedMemoryLimit = false
 		end
 		maxDepth = maxDepth or 10
 		if maxDepth == depth then return end
@@ -209,7 +213,19 @@ do
 					if k ~= "__index" then
 						if type(v) == "table" then
 							if visited[v] then
-								table.insert(parts, string.format("%s = nil", _G.Stringify(k)))
+								table.insert(parts,
+									tostring(k):NeedsQuotas() and
+									string.format("%s[%s] = \"loopback -> %s\"",
+										string.rep("\t", depth+1),
+										_G.Stringify(k),
+										tostring(v)
+									) or
+									string.format("%s%s = \"loopback -> %s\"",
+										string.rep("\t", depth+1),
+										_G.Stringify(k, true),
+										tostring(v)
+									)
+								)
 								continue
 							else
 								visited[v] = true
@@ -232,8 +248,7 @@ do
 									)
 								)
 							else
-								warn("Out of memory")
-								return
+								reachedMemoryLimit = true
 							end
 						end)
 						if not f then
@@ -242,12 +257,83 @@ do
 						end
 					end
 				end
+				if depth == 0 and reachedMemoryLimit then
+					warn("Memory limit reached")
+				end
 				return "{\n" .. table.concat(parts, ",\n") .. "\n" .. string.rep("\t", depth) .. "}"
 			else
 				return "{}"
 			end
 		else
+			if depth == 0 and reachedMemoryLimit then
+				warn("Memory limit reached")
+			end
 			return _G.Stringify(obj)
+		end
+	end
+end
+
+if not decompile then
+	_G.MeltinDecompiler = true
+	
+	getgenv().decompile = function(script, mode, timeout)
+		if type(script) == "userdata" and typeof(script) == "Instance" then
+			if script:IsA("LocalScript") or script:IsA("ModuleScript") then
+				local funcs = {}
+				for k,v in pairs(getgc(true)) do
+					if type(v) == "function" and getfenv(v).script == script then
+						local funcInfo = getinfo(v)
+						if not funcs[funcInfo.name] then
+							funcs[funcInfo.name] = {
+								Info = funcInfo,
+								Upvalues = getupvalues(v),
+								Constants = getupvalues(v),
+								FunctionEnvironment = getfenv(v)
+							}
+						end
+					end
+				end
+				for k,v in pairs(getfenv(v)) do
+					if type(v) == "function" then
+						local funcInfo = getinfo(v)
+						if not funcs[funcInfo.name] then
+							funcs[funcInfo.name] = {
+								Info = funcInfo,
+								Upvalues = getupvalues(v),
+								Constants = getupvalues(v),
+								FunctionEnvironment = getfenv(v)
+							}
+						end
+					end
+				end
+				local env
+				pcall(function()
+					if script:IsA("LocalScript") then
+						env = getsenv(script)
+					elseif script:IsA("ModuleScript") then
+						env = require(script)
+					end
+				end)
+				if not env then
+					env = {}
+				end
+				return _G.Discover(
+					{
+						ScriptEnvironment = env,
+						Functions = funcs
+					}, 10
+				)
+			end
+		elseif type(script) == "function" then
+			return _G.Discover(
+				{
+					Upvalues = getupvalues(script),
+					Constants = getconstants(script),
+					FunctionEnvironment = getfenv(script)
+				}, 10
+			)
+		elseif type(script) == "string" then
+			return _G.Stringify(script, true)
 		end
 	end
 end
@@ -832,7 +918,7 @@ do -- 								ENVIRONMENT CATEGORY
 			playerSelectionPopup.UpdateList(list)
 		end
 		targetPlayer = (targetPlayer and targetPlayer.Parent) and targetPlayer or nil
-		selectPlayerBtn.Text = targetPlayer and targetPlayer.DisplayName or "Select Player"
+		selectPlayerBtn:SetText(targetPlayer and targetPlayer.DisplayName or "Select Player")
 	end
 	local spectateTarget = nil
 	selectPlayerBtn	= environmentCategory:AddButton("Select Player", function()
@@ -842,8 +928,9 @@ do -- 								ENVIRONMENT CATEGORY
 			List = nil,
 			UserChoice = function(result)
 				targetPlayer = result
+				local espData = targetPlayer and _G.ESPModule_GetESPData(targetPlayer) or nil
 				selectPlayerBtn:SetText(targetPlayer and targetPlayer.DisplayName or "Select Player")
-				selectPlayerBtn._GuiObject.TextColor3 = targetPlayer and targetPlayer.TeamColor.Color or Color3.new(1, 1, 1)
+				selectPlayerBtn._GuiObject.TextColor3 = espData and espData.Color or (targetPlayer and targetPlayer.TeamColor.Color or Color3.new(1, 1, 1))
 				selectPlayerBtn:SetEnabled(true)
 				playerSelectionPopup = nil
 			end
@@ -1016,13 +1103,13 @@ do -- 								OTHER CATEGORY
 		_G.SenHub:Destroy()
 		loadstring(game:HttpGet(BaseUrl .. "MeltinHub.lua", true))()
 	end)
-	--[[
+	
 	if setfpscap then
 		local fpsUnlock = otherCategory:AddCheckbox("FPS Unlock", function(state)
 			setfpscap(144)
 		end)
 		--fpsUnlock:SetChecked(true)
-	end]]
+	end
 end
 
 if repository[game.GameId] then
@@ -1077,4 +1164,9 @@ _G.SenHub.OnDestroy = function()
 	
 	--_G.ANTILAG = false
 	--_G.EnableConnections(_G.SafeGetService("LogService").MessageOut)
+	
+	if _G.MeltinDecompiler then
+		_G.MeltinDecompiler = nil
+		getgenv().decompile = nil
+	end
 end
