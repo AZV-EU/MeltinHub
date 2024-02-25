@@ -1,4 +1,4 @@
-local Version = "1.9.3c"
+local Version = "1.9.4"
 _G.MeltinENV = 1
 -- ENVIRONMENT: 0 = public, 1 = dev (local)
 
@@ -9,6 +9,10 @@ _G.MeltinENV = 1
 
 -- Dex Bypasses
 --loadstring(game:HttpGet("https://raw.githubusercontent.com/Babyhamsta/RBLX_Scripts/main/Universal/Bypasses.lua", true))()
+
+if _G.SenHub ~= nil then
+	_G.SenHub:Destroy()
+end
 
 local isDev = _G.MeltinENV == 1
 
@@ -153,6 +157,11 @@ function _G.Stringify(obj, no_quotas)
 		return obj:find("\n") and string.format("[[%s]]", obj) or (no_quotas and obj or string.format("\"%s\"", obj))
 	elseif type(obj) == "number" then
 		return tostring(obj)
+	elseif type(obj) == "function" then
+		local funcInfo = getinfo(obj)
+		if funcInfo and funcInfo.name ~= "" then
+			return _G.Stringify(string.format("function: %s", funcInfo.name), no_quotas)
+		end
 	elseif type(obj) == "userdata" then
 		if typeof(obj) ~= "Instance" then
 			return typeof(obj) .. ".new(" .. tostring(obj) .. ")"
@@ -182,7 +191,7 @@ function _G.Stringify(obj, no_quotas)
 			return table.concat(parts, "")
 		end
 	end
-	return no_quotas and tostring(obj) or (tostring(obj):NeedsQuotas() and string.format("\"%s\"", tostring(obj)) or tostring(obj))
+	return (no_quotas or not tostring(obj):NeedsQuotas()) and tostring(obj) or string.format("\"%s\"", tostring(obj))
 end
 
 do
@@ -196,41 +205,29 @@ do
 	end
 	
 	local visited = {}
+	local counter = 0
 	local reachedMemoryLimit = false
 	function _G.Discover(obj, maxDepth, depth)
 		depth = depth or 0
 		if depth == 0 then
 			visited = {}
+			counter = 0
 			reachedMemoryLimit = false
 		end
 		maxDepth = maxDepth or 10
 		if maxDepth == depth then return end
 		
 		if type(obj) == "table" then
+			if visited[obj] then
+				return string.format("\"loopback -> %s\"", visited[obj])
+			else
+				counter += 1
+				visited[obj] = string.format("table:%d", counter)
+			end
 			if TableContainsData(obj) then
 				local parts = {}
 				for k, v in pairs(obj) do
 					if k ~= "__index" then
-						if type(v) == "table" then
-							if visited[v] then
-								table.insert(parts,
-									tostring(k):NeedsQuotas() and
-									string.format("%s[%s] = \"loopback -> %s\"",
-										string.rep("\t", depth+1),
-										_G.Stringify(k),
-										tostring(v)
-									) or
-									string.format("%s%s = \"loopback -> %s\"",
-										string.rep("\t", depth+1),
-										_G.Stringify(k, true),
-										tostring(v)
-									)
-								)
-								continue
-							else
-								visited[v] = true
-							end
-						end
 						local f, err = pcall(function()
 							local discovery = _G.Discover(v, maxDepth, depth+1)
 							if discovery ~= nil then
@@ -264,6 +261,7 @@ do
 			else
 				return "{}"
 			end
+			--visited[obj] = nil
 		else
 			if depth == 0 and reachedMemoryLimit then
 				warn("Memory limit reached")
@@ -273,54 +271,71 @@ do
 	end
 end
 
-if not decompile then
-	_G.MeltinDecompiler = true
-	
+if isDev then
+	if getsenv_orig then
+		getgenv().getsenv = getsenv_orig
+	end
+	getgenv().getsenv_orig = getsenv or debug.getsenv
+	getgenv().getsenv = function(script)
+		local env
+		local f, err = pcall(function()
+			if script:IsA("LocalScript") then
+				env = getsenv_orig(script)
+			elseif script:IsA("ModuleScript") then
+				env = require(script)
+			end
+		end)
+		if not f then
+			warn("getsenv failed:", err)
+		else
+			if not env then
+				env = {}
+			else
+				env["_G"] = nil
+			end
+			return env
+		end
+	end
+	getgenv().getfunctions = function(script)
+		local funcs = {}
+		for k,v in pairs(getgc(true)) do
+			if type(v) == "function" and getfenv(v).script == script then
+				local funcInfo = getinfo(v)
+				if not funcs[funcInfo.name] then
+					funcs[funcInfo.name] = {
+						Info = funcInfo,
+						Upvalues = getupvalues(v),
+						Constants = getupvalues(v),
+						FunctionEnvironment = getfenv(v)
+					}
+				end
+			end
+		end
+		local env = getsenv(script)
+		if env then
+			for k,v in pairs(env) do
+				if type(v) == "function" then
+					local funcInfo = getinfo(v)
+					if not funcs[funcInfo.name] then
+						funcs[funcInfo.name] = {
+							Info = funcInfo,
+							Upvalues = getupvalues(v),
+							Constants = getupvalues(v),
+							FunctionEnvironment = getfenv(v)
+						}
+					end
+				end
+			end
+		end
+		return funcs
+	end
 	getgenv().decompile = function(script, mode, timeout)
 		if type(script) == "userdata" and typeof(script) == "Instance" then
 			if script:IsA("LocalScript") or script:IsA("ModuleScript") then
-				local funcs = {}
-				for k,v in pairs(getgc(true)) do
-					if type(v) == "function" and getfenv(v).script == script then
-						local funcInfo = getinfo(v)
-						if not funcs[funcInfo.name] then
-							funcs[funcInfo.name] = {
-								Info = funcInfo,
-								Upvalues = getupvalues(v),
-								Constants = getupvalues(v),
-								FunctionEnvironment = getfenv(v)
-							}
-						end
-					end
-				end
-				for k,v in pairs(getfenv(v)) do
-					if type(v) == "function" then
-						local funcInfo = getinfo(v)
-						if not funcs[funcInfo.name] then
-							funcs[funcInfo.name] = {
-								Info = funcInfo,
-								Upvalues = getupvalues(v),
-								Constants = getupvalues(v),
-								FunctionEnvironment = getfenv(v)
-							}
-						end
-					end
-				end
-				local env
-				pcall(function()
-					if script:IsA("LocalScript") then
-						env = getsenv(script)
-					elseif script:IsA("ModuleScript") then
-						env = require(script)
-					end
-				end)
-				if not env then
-					env = {}
-				end
 				return _G.Discover(
 					{
-						ScriptEnvironment = env,
-						Functions = funcs
+						ScriptEnvironment = getsenv(script),
+						Functions = getfunctions(script)
 					}, 10
 				)
 			end
@@ -535,10 +550,6 @@ end
 
 local isSpectating = false
 local isStalking = false
-
-if _G.SenHub ~= nil then
-	_G.SenHub:Destroy()
-end
 
 local gameModule = nil
 local gameModuleConnections = {}
@@ -1167,6 +1178,10 @@ _G.SenHub.OnDestroy = function()
 	
 	if _G.MeltinDecompiler then
 		_G.MeltinDecompiler = nil
+		if getsenv_orig then
+			getgenv().getsenv = getgenv().getsenv_orig
+			getgenv().getsenv_orig = nil
+		end
 		getgenv().decompile = nil
 	end
 end

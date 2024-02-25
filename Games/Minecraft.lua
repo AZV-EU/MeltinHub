@@ -29,6 +29,8 @@ local moduleOn = true
 
 local hand
 function module.Init(category, connections)
+	local ReplicatedStorage = _G.SafeGetService("ReplicatedStorage")
+
 	local plr = game.Players.LocalPlayer
 	local PlayerGui = plr:WaitForChild("PlayerGui")
 	local hud = PlayerGui:WaitForChild("HUDGui")
@@ -50,6 +52,16 @@ function module.Init(category, connections)
 	FixGui()
 	table.insert(connections, plr.CharacterAdded:Connect(FixGui))
 	
+	-- mute music
+	spawn(function()
+		for k,v in pairs(ReplicatedStorage:WaitForChild("Music"):GetChildren()) do
+			if v:IsA("Sound") then
+				v.Volume = 0
+			end
+		end
+	end)
+	
+	-- auto show/hide hand & crosshair
 	local cam = game.Workspace.CurrentCamera
 	if cam then
 		local hand
@@ -70,16 +82,18 @@ function module.Init(category, connections)
 			end
 		end
 		table.insert(connections, game.Workspace.CurrentCamera:GetPropertyChangedSignal("CFrame"):Connect(function()
-			SetHandVisible((cam.CFrame.Position - cam.Focus.Position).Magnitude < 1)
+			SetHandVisible((cam.CFrame.Position - cam.Focus.Position).Magnitude <= 0.5)
 		end))
 	end
+	
+	plr.CameraMaxZoomDistance = 1000
 
 	local RunService = _G.SafeGetService("RunService")
 	local UserInputService = _G.SafeGetService("UserInputService")
 	local MainLocalScript = plr:WaitForChild("PlayerScripts"):WaitForChild("MainLocalScript")
 	local CWorld = require(MainLocalScript:WaitForChild("CWorld"))
 
-	local GameRemotes = game.ReplicatedStorage:WaitForChild("GameRemotes")
+	local GameRemotes = ReplicatedStorage:WaitForChild("GameRemotes")
 
 	local DemoRemote = GameRemotes:FindFirstChild("Demo")
 	if DemoRemote then
@@ -90,9 +104,9 @@ function module.Init(category, connections)
 	local Blocks = game.Workspace:WaitForChild("Blocks")
 	local Fluids = game.Workspace:WaitForChild("Fluid")
 
-	local AssetsMod = game.ReplicatedStorage:WaitForChild("AssetsMod")
-	local _blockInfo = require(AssetsMod:WaitForChild("BlockInfo"));
-	local _itemInfo = require(AssetsMod:WaitForChild("ItemInfo"));
+	local AssetsMod = ReplicatedStorage:WaitForChild("AssetsMod")
+	local _blockInfo = require(AssetsMod:WaitForChild("BlockInfo"))
+	local _itemInfo = require(AssetsMod:WaitForChild("ItemInfo"))
 	local _ItemLevels = require(AssetsMod:WaitForChild("ItemLevels"))
 	local _IDs = require(AssetsMod:WaitForChild("IDs"))
 
@@ -106,55 +120,24 @@ function module.Init(category, connections)
 		UseBlock = GameRemotes:WaitForChild("UseBlock")
 	}
 
-	local Constants = {
-		PlayerReachBlocks = 5.5,
-		BlockSize = 3
-	}
-	Constants.PlayerReach = Constants.PlayerReachBlocks * Constants.BlockSize - 1
-
-	local function ToRegionPos(worldPos)
-		return Vector3.new(
-			math.floor(worldPos.X / Constants.BlockSize + 0.5),
-			math.floor(worldPos.Y / Constants.BlockSize + 0.5),
-			math.floor(worldPos.Z / Constants.BlockSize + 0.5)
-		)
-	end
-
-	local function FindBlockUnderMouse()
-		local msPos = Vector2.new(game.Workspace.CurrentCamera.ViewportSize.X / 2, game.Workspace.CurrentCamera.ViewportSize.Y / 2 - 36)
-		local ray = game.Workspace.CurrentCamera:ScreenPointToRay(msPos.X, msPos.Y, 0)
-		local raycastParams = RaycastParams.new()
-		raycastParams.FilterDescendantsInstances = { Blocks }
-		raycastParams.FilterType = Enum.RaycastFilterType.Whitelist
-		local result = game.Workspace:Raycast(ray.Origin, ray.Unit.Direction * 999, raycastParams);
-		if result then
-			local dist = (result.Position - workspace.CurrentCamera.CFrame.Position).Magnitude
-			if dist < Constants.PlayerReach then
-				local cf = CFrame.new(result.Position, result.Position + ray.Unit.Direction)
-				local pos = ToRegionPos(cf.Position + cf.LookVector / 64)
-				return pos
-			end
-		end
-	end
-
 	local function setXray(state)
 		for _, region in pairs(Blocks:GetChildren()) do
 			for _, block in pairs(region:GetChildren()) do
 				if block:FindFirstChild("BoxHandleAdornment") then
+					block.BoxHandleAdornment.Visible = state
+				else
+					
 					if block.Name == "SapphireOre" then
-						block.BoxHandleAdornment.Visible = true
-					else
-						block.BoxHandleAdornment.Visible = state
+						local bha = Instance.new("BoxHandleAdornment", block)
+						bha.Adornee = block
+						bha.AlwaysOnTop = true
+						bha.Color3 = Color3.fromRGB(29, 29, 211)
+						bha.Size = Vector3.new(3, 3, 3)
+						bha.Transparency = 0.7
+						bha.ZIndex = 10
+						bha.Visible = state
 					end
-				elseif block.Name == "SapphireOre" then
-					local bha = Instance.new("BoxHandleAdornment", block)
-					bha.Adornee = block
-					bha.AlwaysOnTop = true
-					bha.Color3 = Color3.fromRGB(29, 29, 211)
-					bha.Size = Vector3.new(3, 3, 3)
-					bha.Transparency = 0.7
-					bha.ZIndex = 10
-					bha.Visible = true
+					
 				end
 			end
 		end
@@ -207,7 +190,7 @@ function module.Init(category, connections)
 	else
 		warn("No demo-remote, can't setup super-mode!")
 	end
-		
+	
 	local xray
 	xray = category:AddCheckbox("X-Ray", function(state)
 		setXray(state)
@@ -219,6 +202,55 @@ function module.Init(category, connections)
 			end)
 		end
 	end)
+	
+	local Constants = {
+		PlayerReachBlocks = 5.5,
+		BlockSize = 3
+	}
+	Constants.PlayerReach = Constants.PlayerReachBlocks * Constants.BlockSize - 1
+
+	local function getBlock(x,y,z)
+		local chunk
+	end
+	
+	local function PtoT(x,y,z)
+		if type(x) == "vector" then
+			x,y,z = x.X,x.Y,x.Z
+		end
+		return math.floor(x / Constants.BlockSize + .5),
+			math.floor(y / Constants.BlockSize + .5),
+			math.floor(z / Constants.BlockSize + .5)
+	end
+	
+	local function FindBlocks(blockName)
+		local blocks = {}
+		for _, region in pairs(Blocks:GetChildren()) do
+			for _, block in pairs(region:GetChildren()) do
+				if block.Name == blockName then
+					table.insert(blocks, block)
+				end
+			end
+		end
+		return blocks
+	end
+	
+	--[[do -- auto-mine
+		local category = _G.SenHub:AddCategory("Auto-Mine")
+		
+		local autoMine
+		autoMine = category:AddCheckbox("Auto-mine", function(state)
+			if state then
+				task.spawn(function()
+					local currentOre, timerStart
+					while task.wait(1) and autoMine.Checked and module.On do
+						if not currentOre then
+							
+						end
+					end
+				end)
+			end
+		end)
+	end]]
 	
 	--[[
 	local massMine

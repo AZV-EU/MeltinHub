@@ -84,7 +84,7 @@ function module.Init(category, connections)
 		return clientData.get_data()[plr.Name]
 	end
 
-	local function SetLocation(locationName, targetModelName, metadata)
+	getgenv().SetLocation = function(locationName, targetModelName, metadata)
 		local ti = get_thread_identity()
 		set_thread_identity(2)
 		LocationFunc(locationName, targetModelName, metadata or {})
@@ -100,15 +100,47 @@ function module.Init(category, connections)
 		return bp and (use_find and bp.Name:find(placeName) or bp.Name == placeName)
 	end
 	
+	local function TeleportToMainDoor()
+		local bp = GetInteriorBlueprint()
+		if bp then
+			local mainDoor = bp:FindFirstChild("MainDoor", true)
+			if mainDoor then
+				local touchToEnter = mainDoor:FindFirstChild("TouchToEnter", true)
+				if touchToEnter then
+					_G.TeleportPlayerTo(touchToEnter.CFrame * CFrame.new(0, 0, -5))
+				end
+			end
+		end
+	end
+	
 	local function TeleportHome()
 		if not IsAtPlace(plr.Name) then
+			_G.SetCharAnchored(true)
 			while not IsAtPlace(plr.Name) and task.wait(1) and module.On do
-				_G.SetCharAnchored(true)
 				SetLocation("housing", "MainDoor", {
 					["house_owner"] = plr
 				})
-				_G.SetCharAnchored(false)
-				if IsAtPlace(plr.Name) then
+			end
+			_G.SetCharAnchored(false)
+			if IsAtPlace(plr.Name) then
+				TeleportToMainDoor()
+			end
+			task.wait(3)
+		end
+	end
+	
+	local function TeleportToPlace(placeName)
+		if not IsAtPlace(placeName) then
+			_G.SetCharAnchored(true)
+			while not IsAtPlace(placeName) and task.wait(1) and module.On do
+				SetLocation(placeName, "MainDoor")
+			end
+			_G.SetCharAnchored(false)
+			if IsAtPlace(placeName) then
+				local tpStatic = game.Workspace.StaticMap.TeleportLocations:FindFirstChild(placeName)
+				if tpStatic then
+					_G.TeleportPlayerTo(tpStatic.Position + Vector3.new(0, 3, 0))
+				else
 					local mainDoor = GetInteriorBlueprint():FindFirstChild("MainDoor", true)
 					if mainDoor then
 						local touchToEnter = mainDoor:FindFirstChild("TouchToEnter", true)
@@ -118,30 +150,21 @@ function module.Init(category, connections)
 					end
 				end
 			end
-			task.wait(3)
-		end
-	end
-	
-	local function TeleportToStore(shopName)
-		if not IsAtPlace(shopName) then
-			while not IsAtPlace(shopName) and task.wait(1) and module.On do
-				_G.SetCharAnchored(true)
-				SetLocation(shopName, "MainDoor")
-				_G.SetCharAnchored(false)
-			end
-			task.wait(3)
+			task.wait(1)
 		end
 	end
 	
 	local function TeleportToMainMap()
 		if not IsAtPlace("MainMap", true) then
+			_G.SetCharAnchored(true)
 			while not IsAtPlace("MainMap", true) and task.wait(1) and module.On do
-				_G.SetCharAnchored(true)
-				_G.TeleportPlayerTo(game.Workspace.StaticMap.TeleportLocations.Town.Position)
 				SetLocation("MainMap", "Neighborhood/MainDoor")
-				_G.SetCharAnchored(false)
 			end
-			task.wait(3)
+			_G.SetCharAnchored(false)
+			if IsAtPlace("MainMap", true) then
+				_G.TeleportPlayerTo(game.Workspace.StaticMap.TeleportLocations.Town.Position)
+			end
+			task.wait(1)
 		end
 	end
 	
@@ -149,7 +172,7 @@ function module.Init(category, connections)
 		local pets = GetClientData().inventory.pets or {}
 		local myPets = {}
 		for _,pet in pairs(pets) do
-			if pet.id ~= "practice_dog" and pet.Name:sub(-4) ~= "_egg" then
+			if pet.id ~= "practice_dog" and pet.id:sub(-4) ~= "_egg" then
 				myPets[pet.unique] = pet
 			end
 		end
@@ -160,7 +183,7 @@ function module.Init(category, connections)
 		local pets = GetClientData().inventory.pets or {}
 		local myEggs = {}
 		for _,pet in pairs(pets) do
-			if pet.Name:sub(-4) == "_egg" then
+			if pet.id:sub(-4) == "_egg" then
 				myEggs[pet.unique] = pet
 			end
 		end
@@ -303,7 +326,7 @@ function module.Init(category, connections)
 		if isDrink and not GetLowestUsesFood("tea") then
 			ShopAPI.BuyItem:InvokeServer("food", "tea", {})
 		elseif not isDrink and not GetLowestUsesFood("pizza") then
-			ShopAPI.BuyItem:InvokeServer("food", "pizza", {})
+			print("buy item:", ShopAPI.BuyItem:InvokeServer("food", "pizza", {}))
 			ToolAPI.BakeItem:InvokeServer()
 			task.wait(3)
 		end
@@ -345,17 +368,13 @@ function module.Init(category, connections)
 			if not autoEvents.Checked then TeleportHome() end
 			local beds = GetFurnitureByUseId("generic_crib")
 			if #beds > 0 then
-				task.spawn(function()
-					HousingAPI.ActivateFurniture:InvokeServer(
-						plr,
-						beds[1],
-						"UseBlock",
-						{
-							["cframe"] = plr.Character:GetPivot()
-						},
-						isPlayer and plr.Character or Pet.Model
-					)
-				end)
+				HousingAPI.ActivateFurniture:InvokeServer(
+					plr,
+					beds[1],
+					"UseBlock",
+					{cframe = plr.Character:GetPivot()},
+					isPlayer and plr.Character or Pet.Model
+				)
 				WaitUntilAilmentDone(ailment_unique, isPlayer)
 				if isPlayer and plr and plr.Character and plr.Character:FindFirstChild("Humanoid") then
 					plr.Character.Humanoid.Jump = true
@@ -366,17 +385,13 @@ function module.Init(category, connections)
 			if not autoEvents.Checked then TeleportHome() end
 			local showers = GetFurnitureByUseId("generic_shower")
 			if #showers > 0 then
-				task.spawn(function()
-					HousingAPI.ActivateFurniture:InvokeServer(
-						plr,
-						showers[1],
-						"UseBlock",
-						{
-							["cframe"] = plr.Character:GetPivot()
-						},
-						isPlayer and plr.Character or Pet.Model
-					)
-				end)
+				HousingAPI.ActivateFurniture:InvokeServer(
+					plr,
+					showers[1],
+					"UseBlock",
+					{cframe = plr.Character:GetPivot()},
+					isPlayer and plr.Character or Pet.Model
+				)
 				WaitUntilAilmentDone(ailment_unique, isPlayer)
 				if isPlayer and plr and plr.Character and plr.Character:FindFirstChild("Humanoid") then
 					plr.Character.Humanoid.Jump = true
@@ -394,16 +409,21 @@ function module.Init(category, connections)
 					if not food_unique then
 						return
 					end
-					ToolAPI.Equip:InvokeServer(food_unique, {["use_sound_delay"] = true})
+					ToolAPI.Equip:InvokeServer(food_unique, {})
 					ToolAPI.ServerUseTool:FireServer(food_unique, "START")
 					ToolAPI.ServerUseTool:FireServer(food_unique, "END")
-					task.wait(.33)
+					task.wait(1)
 				until IsAilmentDone(ailment_unique, isPlayer)
+				if food_unique then
+					ToolAPI.Unequip:InvokeServer(food_unique)
+				end
 			else
-				ToolAPI.Equip:InvokeServer(food_unique, {["use_sound_delay"] = true})
-				PetObjectAPI.CreatePetObject:InvokeServer("__Enum_PetObjectCreatorType_2", {["unique_id"] = food_unique})
+				ToolAPI.Equip:InvokeServer(food_unique, {})
+				task.wait(.33)
+				PetObjectAPI.CreatePetObject:InvokeServer("__Enum_PetObjectCreatorType_2", {unique_id = food_unique})
+				task.wait(.33)
 				PetAPI.ConsumeFoodItem:FireServer(food_unique)
-				task.wait(2)
+				task.wait(8)
 				WaitUntilAilmentDone(ailment_unique, isPlayer)
 			end
 		end,
@@ -418,67 +438,69 @@ function module.Init(category, connections)
 					if not drink_unique then
 						return
 					end
-					ToolAPI.Equip:InvokeServer(drink_unique, {["use_sound_delay"] = true})
+					ToolAPI.Equip:InvokeServer(drink_unique, {})
 					ToolAPI.ServerUseTool:FireServer(drink_unique, "START")
 					ToolAPI.ServerUseTool:FireServer(drink_unique, "END")
-					task.wait(.33)
+					task.wait(1)
 				until IsAilmentDone(ailment_unique, isPlayer) or not autoFarm.Checked or not module.On
 			else
-				ToolAPI.Equip:InvokeServer(drink_unique, {["use_sound_delay"] = true})
-				PetObjectAPI.CreatePetObject:InvokeServer("__Enum_PetObjectCreatorType_2", {["unique_id"] = drink_unique})
+				ToolAPI.Equip:InvokeServer(drink_unique, {})
+				task.wait(.33)
+				PetObjectAPI.CreatePetObject:InvokeServer("__Enum_PetObjectCreatorType_2", {unique_id = drink_unique})
+				task.wait(.33)
 				PetAPI.ConsumeFoodItem:FireServer(drink_unique)
-				task.wait(2)
+				task.wait(8)
 				WaitUntilAilmentDone(ailment_unique, isPlayer)
 			end
 		end,
 		["sick"] = function(ailment_unique, isPlayer)
 			MonitorAPI.HealWithDoctor:FireServer()
+			WaitUntilAilmentDone(ailment_unique, isPlayer)
 		end,
 		["adoption_party"] = function(ailment_unique, isPlayer)
 			if autoEvents.Checked then return end
-			TeleportToStore("Nursery")
-			_G.SetCharAnchored(true)
+			TeleportToPlace("Nursery")
 			WaitUntilAilmentDone(ailment_unique, isPlayer)
-			_G.SetCharAnchored(false)
+			TeleportHome()
 		end,
 		["school"] = function(ailment_unique, isPlayer)
 			if autoEvents.Checked then return end
-			TeleportToStore("School")
-			_G.SetCharAnchored(true)
+			TeleportToPlace("School")
 			WaitUntilAilmentDone(ailment_unique, isPlayer)
-			_G.SetCharAnchored(false)
+			TeleportHome()
 		end,
 		["pizza_party"] = function(ailment_unique, isPlayer)
 			if autoEvents.Checked then return end
-			TeleportToStore("PizzaShop")
-			_G.SetCharAnchored(true)
+			TeleportToPlace("PizzaShop")
 			WaitUntilAilmentDone(ailment_unique, isPlayer)
-			_G.SetCharAnchored(false)
+			TeleportHome()
 		end,
 		["salon"] = function(ailment_unique, isPlayer)
 			if autoEvents.Checked then return end
-			TeleportToStore("Salon")
-			_G.SetCharAnchored(true)
+			TeleportToPlace("Salon")
 			WaitUntilAilmentDone(ailment_unique, isPlayer)
-			_G.SetCharAnchored(false)
+			TeleportHome()
 		end,
 		["pool_party"] = function(ailment_unique, isPlayer)
 			if autoEvents.Checked then return end
 			TeleportToMainMap()
 			_G.TeleportPlayerTo(game.Workspace.StaticMap.Pool.PoolOrigin.Position + Vector3.new(0, 5, 0))
 			WaitUntilAilmentDone(ailment_unique, isPlayer)
+			TeleportHome()
 		end,
 		["camping"] = function(ailment_unique, isPlayer)
 			if autoEvents.Checked then return end
 			TeleportToMainMap()
 			_G.TeleportPlayerTo(Workspace.StaticMap.Campsite.CampsiteOrigin.Position + Vector3.new(0, 5, 0))
 			WaitUntilAilmentDone(ailment_unique, isPlayer)
+			TeleportHome()
 		end,
 		["bored"] = function(ailment_unique, isPlayer)
 			if autoEvents.Checked then return end
 			TeleportToMainMap()
 			_G.TeleportPlayerTo(Workspace.StaticMap.Park.AilmentTarget.Position + Vector3.new(0, 5, 0))
 			WaitUntilAilmentDone(ailment_unique, isPlayer)
+			TeleportHome()
 		end
 	}
 	
@@ -488,7 +510,7 @@ function module.Init(category, connections)
 	
 	task.spawn(function()
 		local pet, ailments
-		while task.wait(1) and module.On do
+		while task.wait(2) and module.On do
 			if autoFarm.Checked then
 				pet = GetEquippedPet()
 				if (not pet or pet.properties.age >= 6) and autoSelectPet.Checked then
@@ -498,19 +520,21 @@ function module.Init(category, connections)
 					ReequipPet(pet)
 					if Pet.Current and Pet.Model and Pet.Model.Parent == PetsModel then
 						for _, ailment in pairs(GetPetAilments()) do
-							if not module.On then break end
+							if not autoFarm.Checked or not module.On then break end
 							if AilmentFuncTable[ailment.id] then
 								autoFarmStatus:SetText("Doing pet task '" .. tostring(ailment.id) .. "'...")
 								local f, err = pcall(AilmentFuncTable[ailment.id], ailment.unique, false)
 								if not f then
 									warn(err)
+								else
+									task.wait(1)
 								end
 							end
 						end
 					end
 				end
 				for _, ailment in pairs(GetPlayerAilments()) do
-					if not module.On then break end
+					if not autoFarm.Checked or not module.On then break end
 					if AilmentFuncTable[ailment.id] then
 						autoFarmStatus:SetText("Doing player task '" .. tostring(ailment.id) .. "'...")
 						local f, err = pcall(AilmentFuncTable[ailment.id], ailment.unique, true)
@@ -526,8 +550,8 @@ function module.Init(category, connections)
 		end
 	end)
 	
-	category:AddButton("TP Home", TeleportHome).Inline = true
-	category:AddButton("TP MainMap", TeleportToMainMap)
+	category:AddButton("Teleport Home", TeleportHome).Inline = true
+	category:AddButton("Teleport Town", TeleportToMainMap)
 	
 	local EventItems = {
 		["fire_dimension_2024_burnt_bites_bait"] = true
@@ -539,94 +563,91 @@ function module.Init(category, connections)
 		local EventHandlers = {}
 		
 		local eventLabel = category:AddLabel("Idle")
-		do
-			EventHandlers["Lunar2024Shop"] = function(map)
-				local state = StaticMap:FindFirstChild("red_light_green_light_minigame_state")
-				if state and state:FindFirstChild("is_game_active") and state.is_game_active.Value == true and state:FindFirstChild("players_loading") and state.players_loading.Value == false then
-					local arena = map:FindFirstChild("Arena")
-					if arena then
-						local throwables = arena:FindFirstChild("Throwables")
-						if throwables then
-							local targets = {}
-							for _, throwable in pairs(throwables:GetChildren()) do
-								if throwable:IsA("Model") and throwable:GetAttribute("UserId") == plr.UserId and throwable.Name == "ThrowableGold" then
-									table.insert(targets, throwable)
-								end
+		local eventMapName = "FireDimension"
+		
+		local lureDuration = 600
+		local lureTimer = lureDuration
+		local hasBaits = true
+		local function UseBait(bait_unique)
+			if autoEvents.Checked and hasBaits and tick() - lureTimer > lureDuration then
+				TeleportHome()
+				for furniture_unique,furniture in pairs(GetClientData().house_interior.furniture) do
+					if furniture.id == "lures_2023_normal_lure" then
+						if furniture.lure then
+							if furniture.lure.finished then
+								eventLabel:SetText("Replacing bait...")
+								HousingAPI.ActivateFurniture:InvokeServer(plr, furniture_unique, "UseBlock", false, plr.Character)
+								task.wait(1)
+								HousingAPI.ActivateFurniture:InvokeServer(plr, furniture_unique, "UseBlock", {bait_unique = bait_unique}, plr.Character)
+								lureTimer = tick()
+							else
+								eventLabel:SetText("Can't use bait yet")
+								lureTimer = furniture.lure.lure_start_timestamp
 							end
-							for _, throwable in pairs(throwables:GetChildren()) do
-								if throwable:IsA("Model") and throwable:GetAttribute("UserId") == plr.UserId and throwable.Name == "ThrowableNormal" then
-									table.insert(targets, throwable)
-								end
-							end
-							if #targets > 0 then
-								local count = 0
-								for _, target in pairs(targets) do
-									MinigameAPI.MessageServer:FireServer("red_light_green_light", "attempt_pick_up", target:GetAttribute("Id"))
-									task.wait(.5)
-									count += 1
-									if count == 3 then
-										MinigameAPI.MessageServer:FireServer("red_light_green_light", "attempt_drop_off", 1)
-										task.wait(.5)
-										count = 0
-									end
-								end
-								MinigameAPI.MessageServer:FireServer("red_light_green_light", "attempt_drop_off", 1)
-							end
+						elseif not furniture.lure then
+							eventLabel:SetText("Using bait...")
+							HousingAPI.ActivateFurniture:InvokeServer(plr, furniture_unique, "UseBlock", {bait_unique = bait_unique}, plr.Character)
+							lureTimer = tick()
 						end
-					end
-				elseif string.find(map.Name, "MainMap") then
-					for _, furniture_unique in pairs(GetFurnitureByName("LNY2024KiteBox")) do
-						HousingAPI.ActivateInteriorFurniture:InvokeServer(furniture_unique, "UseBlock", nil, plr.Character)
+						return
 					end
 				end
+				eventLabel:SetText("Couldn't find lure! (Restart needed)")
+				hasBaits = false
 			end
 		end
 		
-		do
-			EventHandlers["FireDimension"] = function(map)
-				local cooking = map:FindFirstChild("Cooking")
-				if cooking then
-					local locations = cooking:FindFirstChild("IngredientLocations")
-					local pots = cooking:FindFirstChild("Pots")
-					if locations and pots then
-						for _,fruitDir in pairs(locations:GetChildren()) do
-							for _,fruitModel in pairs(fruitDir:GetChildren()) do
-								if fruitModel:FindFirstChild("Fruit") then
-									FireDimensionAPI.PickFruit:InvokeServer(fruitDir.Name:lower(), tonumber(fruitModel.Name))
-								end
+		local function eventHandler(map)
+			local cooking = map:FindFirstChild("Cooking")
+			if cooking then
+				local locations = cooking:FindFirstChild("IngredientLocations")
+				local pots = cooking:FindFirstChild("Pots")
+				if locations and pots then
+					for _,fruitDir in pairs(locations:GetChildren()) do
+						for _,fruitModel in pairs(fruitDir:GetChildren()) do
+							if fruitModel:FindFirstChild("Fruit") then
+								FireDimensionAPI.PickFruit:InvokeServer(fruitDir.Name:lower(), tonumber(fruitModel.Name))
 							end
 						end
-						local recipe = pots:FindFirstChildWhichIsA("Folder")
-						if recipe then
-							local potModel = recipe:FindFirstChildWhichIsA("Model")
-							if potModel and potModel:FindFirstChild("GlowCircle") then
-								FireDimensionAPI.CookRecipe:InvokeServer(recipe.Name)
-							end
+					end
+					local recipe = pots:FindFirstChildWhichIsA("Folder")
+					if recipe then
+						local potModel = recipe:FindFirstChildWhichIsA("Model")
+						if potModel and potModel:FindFirstChild("GlowCircle") then
+							FireDimensionAPI.CookRecipe:InvokeServer(recipe.Name)
 						end
 					end
 				end
 			end
+			local bait_unique = GetLowestUsesFood("fire_dimension_2024_burnt_bites_bait")
+			if bait_unique then
+				UseBait(bait_unique)
+				task.wait(1)
+			end
 		end
 		
-		autoEvents = category:AddCheckbox("Auto-events")
-		--autoEvents:SetChecked(true)
-		
-		task.spawn(function()
-			local map, eventHandler
-			while task.wait(2) and module.On do
-				map = GetInteriorBlueprint()
-				if autoEvents.Checked and map and EventHandlers[map.Name] then
-					eventLabel:SetText("Event: " .. map.Name)
-					local f, err = pcall(EventHandlers[map.Name], map)
-					if not f then
-						eventLabel:SetText("HANDLER ERROR!")
-						warn(err)
-						task.wait(5)
+		autoEvents = category:AddCheckbox("Auto-event", function(state)
+			hasBaits = true
+			if state then
+				task.spawn(function()
+					local map
+					while task.wait(2) and autoEvents.Checked and module.On do
+						map = GetInteriorBlueprint()
+						if not map or map.Name ~= eventMapName then
+							eventLabel:SetText("Teleporting to " .. tostring(eventMapName) .. "...")
+							TeleportToPlace(eventMapName)
+						else
+							eventLabel:SetText("Doing event: " .. tostring(eventMapName))
+							local f, err = pcall(eventHandler, map)
+							if not f then
+								eventLabel:SetText("HANDLER ERROR!")
+								warn(err)
+								task.wait(5)
+							end
+						end
 					end
-				else
 					eventLabel:SetText("Idle")
-					task.wait(2)
-				end
+				end)
 			end
 		end)
 	end
@@ -811,7 +832,10 @@ function module.Init(category, connections)
 	
 	if _G.MeltinENV == 1 then
 		local category = _G.SenHub:AddCategory("DEV")
-		category:AddButton("Copy client data", function()
+		category:AddButton("Copy full data", function()
+			setclipboard(_G.Discover(clientData.get_data(), 3))
+		end)
+		category:AddButton("Copy player data", function()
 			setclipboard(_G.Discover(GetClientData(), 6))
 		end)
 		category:AddButton("Copy API", function()
