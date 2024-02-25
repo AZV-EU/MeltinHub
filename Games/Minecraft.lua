@@ -6,7 +6,7 @@ local module = {
 function module.PreInit()
 	--[[
 	if not _G.AntiTp then
-		local TeleportService = game:GetService("TeleportService")
+		local TeleportService = _G.SafeGetService("TeleportService")
 		local OldNameCall = nil
 		OldNameCall = hookmetamethod(game, "__namecall", function(Self, ...)
 			local Args = {...}
@@ -27,13 +27,50 @@ end
 
 local moduleOn = true
 
+local hand
 function module.Init(category, connections)
 	local plr = game.Players.LocalPlayer
+	local PlayerGui = plr:WaitForChild("PlayerGui")
 
-	plr:WaitForChild("PlayerGui"):WaitForChild("GamePass Shop Gui").Enabled = false
+	local function FixGui()
+		task.spawn(function()
+			-- remove gamepasses
+			for k,v in pairs(PlayerGui:WaitForChild("GamePass Shop Gui"):GetChildren()) do
+				v.Visible = false
+			end
+			
+			-- remove vignette
+			local hud = PlayerGui:WaitForChild("HUDGui")
+			hud:WaitForChild("Vignette").Visible = false
+			
+			-- remove pesky paid items
+			hud:WaitForChild("Inventory"):WaitForChild("Inventory").Visible = false
+		end)
+	end
+	FixGui()
+	table.insert(connections, plr.CharacterAdded:Connect(FixGui))
+	
+	local cam = game.Workspace.CurrentCamera
+	if cam then
+		local hand
+		local function SetHandVisible(visible)
+			hand = cam:FindFirstChild("Hand")
+			if hand then
+				hand.Transparency = visible and 0 or 1
+				for k,v in pairs(hand:GetChildren()) do
+					if v:IsA("Texture") then
+						v.Transparency = visible and 0 or 1
+					end
+				end
+			end
+		end
+		table.insert(connections, game.Workspace.CurrentCamera:GetPropertyChangedSignal("CFrame"):Connect(function()
+			SetHandVisible((cam.CFrame.Position - cam.Focus.Position).Magnitude < 1)
+		end))
+	end
 
-	local RunService = game:GetService("RunService")
-	local UserInputService = game:GetService("UserInputService")
+	local RunService = _G.SafeGetService("RunService")
+	local UserInputService = _G.SafeGetService("UserInputService")
 	local MainLocalScript = plr:WaitForChild("PlayerScripts"):WaitForChild("MainLocalScript")
 	local CWorld = require(MainLocalScript:WaitForChild("CWorld"))
 
@@ -172,6 +209,15 @@ function module.Init(category, connections)
 			setXray(xray.Checked)
 		end
 	end))
+	
+	table.insert(connections, game.Workspace.CurrentCamera.ChildAdded:Connect(function(child)
+		if child.Name:lower() == "hand" then
+			task.wait(1)
+			pcall(function() child.Parent = game.Lighting end)
+		end
+	end))
+	
+	
 	
 	--[[
 	local massMine
