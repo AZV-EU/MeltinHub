@@ -31,6 +31,7 @@ local hand
 function module.Init(category, connections)
 	local plr = game.Players.LocalPlayer
 	local PlayerGui = plr:WaitForChild("PlayerGui")
+	local hud = PlayerGui:WaitForChild("HUDGui")
 
 	local function FixGui()
 		task.spawn(function()
@@ -40,7 +41,6 @@ function module.Init(category, connections)
 			end
 			
 			-- remove vignette
-			local hud = PlayerGui:WaitForChild("HUDGui")
 			hud:WaitForChild("Vignette").Visible = false
 			
 			-- remove pesky paid items
@@ -60,6 +60,11 @@ function module.Init(category, connections)
 				for k,v in pairs(hand:GetChildren()) do
 					if v:IsA("Texture") then
 						v.Transparency = visible and 0 or 1
+					end
+				end
+				for k,v in pairs(hud:GetChildren()) do
+					if v:IsA("Frame") and v.Name == "Crosshair" then
+						v.Visible = visible
 					end
 				end
 			end
@@ -203,21 +208,17 @@ function module.Init(category, connections)
 		warn("No demo-remote, can't setup super-mode!")
 	end
 		
-	local xray = category:AddCheckbox("X-Ray", setXray)
-	coroutine.resume(coroutine.create(function()
-		while moduleOn and wait(5) do
-			setXray(xray.Checked)
+	local xray
+	xray = category:AddCheckbox("X-Ray", function(state)
+		setXray(state)
+		if state then
+			task.spawn(function()
+				while task.wait(5) and xray.Checked and module.On do
+					setXray(true)
+				end
+			end)
 		end
-	end))
-	
-	table.insert(connections, game.Workspace.CurrentCamera.ChildAdded:Connect(function(child)
-		if child.Name:lower() == "hand" then
-			task.wait(1)
-			pcall(function() child.Parent = game.Lighting end)
-		end
-	end))
-	
-	
+	end)
 	
 	--[[
 	local massMine
