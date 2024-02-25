@@ -637,7 +637,7 @@ function module.Init(category, connections)
 						map = GetInteriorBlueprint()
 						if not map or map.Name ~= eventMapName then
 							eventLabel:SetText("Teleporting to " .. tostring(eventMapName) .. "...")
-							TeleportToPlace(eventMapName)
+							TeleportToPlace(eventMapName, true)
 						else
 							eventLabel:SetText("Doing event: " .. tostring(eventMapName))
 							local f, err = pcall(eventHandler, map)
