@@ -129,7 +129,7 @@ function module.Init(category, connections)
 		end
 	end
 	
-	local function TeleportToPlace(placeName)
+	local function TeleportToPlace(placeName, randomOffset)
 		if not IsAtPlace(placeName) then
 			_G.SetCharAnchored(true)
 			while not IsAtPlace(placeName) and task.wait(1) and module.On do
@@ -139,13 +139,15 @@ function module.Init(category, connections)
 			if IsAtPlace(placeName) then
 				local tpStatic = game.Workspace.StaticMap.TeleportLocations:FindFirstChild(placeName)
 				if tpStatic then
-					_G.TeleportPlayerTo(tpStatic.Position + Vector3.new(0, 3, 0))
+					local offsetX, offsetZ = math.random(-10,10), math.random(-10,10)
+					_G.TeleportPlayerTo(tpStatic.Position + Vector3.new(randomOffset and offsetX or 0, 3, randomOffset and offsetZ or 0))
 				else
 					local mainDoor = GetInteriorBlueprint():FindFirstChild("MainDoor", true)
 					if mainDoor then
 						local touchToEnter = mainDoor:FindFirstChild("TouchToEnter", true)
 						if touchToEnter then
-							_G.TeleportPlayerTo(touchToEnter.CFrame * CFrame.new(0, 0, -5))
+							local offsetX = math.random(-5,5)
+							_G.TeleportPlayerTo(touchToEnter.CFrame * CFrame.new(randomOffset and offsetX or 0, 0, -5))
 						end
 					end
 				end
