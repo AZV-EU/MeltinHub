@@ -583,7 +583,7 @@ function module.Init(category, connections)
 					if autoSelectPet.Checked and (not pet or pet.properties.age >= 6) then
 						pet = AutoSelectPet()
 					end
-					if pet and pet.properties.age < 6 then
+					if pet then
 						ReequipPet(pet)
 						if Pet.Current and Pet.Model and Pet.Model.Parent == PetsModel then
 							for _, ailment in pairs(GetPetAilments()) do
