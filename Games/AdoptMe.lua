@@ -113,10 +113,15 @@ function module.Init(category, connections)
 		end
 	end
 	
+	local isTeleporting = false
 	local function TeleportHome()
+		if isTeleporting then
+			return IsAtPlace(plr.Name)
+		end
+		isTeleporting = true
 		if not IsAtPlace(plr.Name) then
 			_G.SetCharAnchored(true)
-			while not IsAtPlace(plr.Name) and task.wait(1) and module.On do
+			while task.wait(1) and not IsAtPlace(plr.Name) and module.On do
 				SetLocation("housing", "MainDoor", {
 					["house_owner"] = plr
 				})
@@ -127,12 +132,18 @@ function module.Init(category, connections)
 			end
 			task.wait(3)
 		end
+		isTeleporting = false
+		return IsAtPlace(plr.Name)
 	end
 	
 	local function TeleportToPlace(placeName, randomOffset)
+		if isTeleporting then
+			return IsAtPlace(placeName)
+		end
+		isTeleporting = true
 		if not IsAtPlace(placeName) then
 			_G.SetCharAnchored(true)
-			while not IsAtPlace(placeName) and task.wait(1) and module.On do
+			while task.wait(1) and not IsAtPlace(placeName) and module.On do
 				SetLocation(placeName, "MainDoor")
 			end
 			_G.SetCharAnchored(false)
@@ -154,12 +165,18 @@ function module.Init(category, connections)
 			end
 			task.wait(1)
 		end
+		isTeleporting = false
+		return IsAtPlace(placeName)
 	end
 	
 	local function TeleportToMainMap()
+		if isTeleporting then
+			return IsAtPlace("MainMap", true)
+		end
+		isTeleporting = true
 		if not IsAtPlace("MainMap", true) then
 			_G.SetCharAnchored(true)
-			while not IsAtPlace("MainMap", true) and task.wait(1) and module.On do
+			while task.wait(1) and not IsAtPlace("MainMap", true) and module.On do
 				SetLocation("MainMap", "Neighborhood/MainDoor")
 			end
 			_G.SetCharAnchored(false)
@@ -168,6 +185,8 @@ function module.Init(category, connections)
 			end
 			task.wait(1)
 		end
+		isTeleporting = false
+		return IsAtPlace("MainMap", true)
 	end
 	
 	local function GetPets()
@@ -228,6 +247,27 @@ function module.Init(category, connections)
 	
 	local function GetPlayerTeam()
 		return GetClientData().team
+	end
+	
+	local function UseBait(bait_unique)
+		for furniture_unique,furniture in pairs(GetClientData().house_interior.furniture) do
+			if furniture.id == "lures_2023_normal_lure" then
+				if furniture.lure then
+					if furniture.lure.finished then
+						HousingAPI.ActivateFurniture:InvokeServer(plr, furniture_unique, "UseBlock", false, plr.Character)
+						task.wait(1)
+						HousingAPI.ActivateFurniture:InvokeServer(plr, furniture_unique, "UseBlock", {bait_unique = bait_unique}, plr.Character)
+						return tick()
+					else
+						return furniture.lure.lure_start_timestamp
+					end
+				elseif not furniture.lure then
+					HousingAPI.ActivateFurniture:InvokeServer(plr, furniture_unique, "UseBlock", {bait_unique = bait_unique}, plr.Character)
+					return tick()
+				end
+				return
+			end
+		end
 	end
 	
 	local function ReequipPet(pet)
@@ -379,50 +419,60 @@ function module.Init(category, connections)
 		return GetAilmentFromUnique(ailment_unique, isPlayer) == nil
 	end
 	
+	local eventLock
 	local function WaitUntilAilmentDone(ailment_unique, isPlayer)
 		local waitStart = tick()
 		repeat
 			task.wait(1)
-		until IsAilmentDone(ailment_unique, isPlayer) or tick() - waitStart > MAX_WAIT or not autoFarm.Checked or not module.On
+		until IsAilmentDone(ailment_unique, isPlayer) or eventLock() or tick() - waitStart > MAX_WAIT or not autoFarm.Checked or not module.On
 	end
 	
-	local autoEvents
 	local AilmentFuncTable = {
-		["sleepy"] = function(ailment_unique, isPlayer)
-			if not autoEvents.Checked then TeleportHome() end
+		["sleepy"] = {RequiresTeleport = false, Function = function(ailment_unique, isPlayer)
+			if not eventLock() then
+				if not TeleportHome() then return end
+			end
 			local beds = GetFurnitureByUseId("generic_crib")
 			if #beds > 0 then
-				HousingAPI.ActivateFurniture:InvokeServer(
-					plr,
-					beds[1],
-					"UseBlock",
-					{cframe = plr.Character:GetPivot()},
-					isPlayer and plr.Character or Pet.Model
-				)
+				task.spawn(function()
+					HousingAPI.ActivateFurniture:InvokeServer(
+						plr,
+						beds[1],
+						"UseBlock",
+						{cframe = plr.Character:GetPivot()},
+						isPlayer and plr.Character or Pet.Model
+					)
+				end)
+				task.wait(1)
 				WaitUntilAilmentDone(ailment_unique, isPlayer)
 				if isPlayer and plr and plr.Character and plr.Character:FindFirstChild("Humanoid") then
 					plr.Character.Humanoid.Jump = true
 				end
 			end
-		end,
-		["dirty"] = function(ailment_unique, isPlayer)
-			if not autoEvents.Checked then TeleportHome() end
+		end},
+		["dirty"] = {RequiresTeleport = false, Function = function(ailment_unique, isPlayer)
+			if not eventLock() then
+				if not TeleportHome() then return end
+			end
 			local showers = GetFurnitureByUseId("generic_shower")
 			if #showers > 0 then
-				HousingAPI.ActivateFurniture:InvokeServer(
-					plr,
-					showers[1],
-					"UseBlock",
-					{cframe = plr.Character:GetPivot()},
-					isPlayer and plr.Character or Pet.Model
-				)
+				task.spawn(function()
+					HousingAPI.ActivateFurniture:InvokeServer(
+						plr,
+						showers[1],
+						"UseBlock",
+						{cframe = plr.Character:GetPivot()},
+						isPlayer and plr.Character or Pet.Model
+					)
+				end)
+				task.wait(1)
 				WaitUntilAilmentDone(ailment_unique, isPlayer)
 				if isPlayer and plr and plr.Character and plr.Character:FindFirstChild("Humanoid") then
 					plr.Character.Humanoid.Jump = true
 				end
 			end
-		end,
-		["hungry"] = function(ailment_unique, isPlayer)
+		end},
+		["hungry"] = {RequiresTeleport = false, Function = function(ailment_unique, isPlayer)
 			local food_unique = PrepareFood(false)
 			if not food_unique then
 				return
@@ -450,8 +500,8 @@ function module.Init(category, connections)
 				task.wait(8)
 				WaitUntilAilmentDone(ailment_unique, isPlayer)
 			end
-		end,
-		["thirsty"] = function(ailment_unique, isPlayer)
+		end},
+		["thirsty"] = {RequiresTeleport = false, Function = function(ailment_unique, isPlayer)
 			local drink_unique = PrepareFood(true)
 			if not drink_unique then
 				return
@@ -476,61 +526,53 @@ function module.Init(category, connections)
 				task.wait(8)
 				WaitUntilAilmentDone(ailment_unique, isPlayer)
 			end
-		end,
-		["sick"] = function(ailment_unique, isPlayer)
+		end},
+		["sick"] = {RequiresTeleport = false, Function = function(ailment_unique, isPlayer)
 			MonitorAPI.HealWithDoctor:FireServer()
 			WaitUntilAilmentDone(ailment_unique, isPlayer)
-		end,
-		["adoption_party"] = function(ailment_unique, isPlayer)
-			if autoEvents.Checked then return end
-			TeleportToPlace("Nursery")
+		end},
+		["adoption_party"] = {RequiresTeleport = true, Function = function(ailment_unique, isPlayer)
+			if not TeleportToPlace("Nursery") then return end
 			WaitUntilAilmentDone(ailment_unique, isPlayer)
-			TeleportHome()
-		end,
-		["school"] = function(ailment_unique, isPlayer)
-			if autoEvents.Checked then return end
-			TeleportToPlace("School")
+			if not eventLock() then TeleportHome() end
+		end},
+		["school"] = {RequiresTeleport = true, Function = function(ailment_unique, isPlayer)
+			if not TeleportToPlace("School") then return end
 			WaitUntilAilmentDone(ailment_unique, isPlayer)
-			TeleportHome()
-		end,
-		["pizza_party"] = function(ailment_unique, isPlayer)
-			if autoEvents.Checked then return end
-			TeleportToPlace("PizzaShop")
+			if not eventLock() then TeleportHome() end
+		end},
+		["pizza_party"] = {RequiresTeleport = true, Function = function(ailment_unique, isPlayer)
+			if not TeleportToPlace("PizzaShop") then return end
 			WaitUntilAilmentDone(ailment_unique, isPlayer)
-			TeleportHome()
-		end,
-		["salon"] = function(ailment_unique, isPlayer)
-			if autoEvents.Checked then return end
-			TeleportToPlace("Salon")
+			if not eventLock() then TeleportHome() end
+		end},
+		["salon"] = {RequiresTeleport = true, Function = function(ailment_unique, isPlayer)
+			if not TeleportToPlace("Salon") then return end
 			WaitUntilAilmentDone(ailment_unique, isPlayer)
-			TeleportHome()
-		end,
-		["pool_party"] = function(ailment_unique, isPlayer)
-			if autoEvents.Checked then return end
-			TeleportToMainMap()
+			if not eventLock() then TeleportHome() end
+		end},
+		["pool_party"] = {RequiresTeleport = true, Function = function(ailment_unique, isPlayer)
+			if not TeleportToMainMap() then return end
 			_G.TeleportPlayerTo(game.Workspace.StaticMap.Pool.PoolOrigin.Position + Vector3.new(0, 5, 0))
 			WaitUntilAilmentDone(ailment_unique, isPlayer)
-			TeleportHome()
-		end,
-		["camping"] = function(ailment_unique, isPlayer)
-			if autoEvents.Checked then return end
-			TeleportToMainMap()
+			if not eventLock() then TeleportHome() end
+		end},
+		["camping"] = {RequiresTeleport = true, Function = function(ailment_unique, isPlayer)
+			if not TeleportToMainMap() then return end
 			_G.TeleportPlayerTo(Workspace.StaticMap.Campsite.CampsiteOrigin.Position + Vector3.new(0, 5, 0))
 			WaitUntilAilmentDone(ailment_unique, isPlayer)
-			TeleportHome()
-		end,
-		["bored"] = function(ailment_unique, isPlayer)
-			if autoEvents.Checked then return end
-			TeleportToMainMap()
+			if not eventLock() then TeleportHome() end
+		end},
+		["bored"] = {RequiresTeleport = true, Function = function(ailment_unique, isPlayer)
+			if not TeleportToMainMap() then return end
 			_G.TeleportPlayerTo(Workspace.StaticMap.Park.AilmentTarget.Position + Vector3.new(0, 5, 0))
 			WaitUntilAilmentDone(ailment_unique, isPlayer)
-			TeleportHome()
-		end
+			if not eventLock() then TeleportHome() end
+		end}
 	}
 	
 	local autoFarmStatus = category:AddLabel("Idle")
-	local autoSelectPet = category:AddCheckbox("Auto-select pets")
-	autoSelectPet:SetChecked(true)
+	local autoSelectPet
 	
 	autoFarm = category:AddCheckbox("Auto-farm", function(state)
 		if state then
@@ -538,7 +580,7 @@ function module.Init(category, connections)
 				local pet, ailments
 				while task.wait(2) and autoFarm.Checked and module.On do
 					pet = GetEquippedPet()
-					if (not pet or pet.properties.age >= 6) and autoSelectPet.Checked then
+					if autoSelectPet.Checked and (not pet or pet.properties.age >= 6) then
 						pet = AutoSelectPet()
 					end
 					if pet and pet.properties.age < 6 then
@@ -546,9 +588,9 @@ function module.Init(category, connections)
 						if Pet.Current and Pet.Model and Pet.Model.Parent == PetsModel then
 							for _, ailment in pairs(GetPetAilments()) do
 								if not autoFarm.Checked or not module.On then break end
-								if AilmentFuncTable[ailment.id] then
+								if AilmentFuncTable[ailment.id] and (not AilmentFuncTable[ailment.id].RequiresTeleport or not eventLock()) then
 									autoFarmStatus:SetText("Doing pet task '" .. tostring(ailment.id) .. "'...")
-									local f, err = pcall(AilmentFuncTable[ailment.id], ailment.unique, false)
+									local f, err = pcall(AilmentFuncTable[ailment.id].Function, ailment.unique, false)
 									if not f then
 										warn(err)
 									else
@@ -560,9 +602,9 @@ function module.Init(category, connections)
 					end
 					for _, ailment in pairs(GetPlayerAilments()) do
 						if not autoFarm.Checked or not module.On then break end
-						if AilmentFuncTable[ailment.id] then
+						if AilmentFuncTable[ailment.id] and (not AilmentFuncTable[ailment.id].RequiresTeleport or not eventLock()) then
 							autoFarmStatus:SetText("Doing player task '" .. tostring(ailment.id) .. "'...")
-							local f, err = pcall(AilmentFuncTable[ailment.id], ailment.unique, true)
+							local f, err = pcall(AilmentFuncTable[ailment.id].Function, ailment.unique, true)
 							if not f then
 								warn(err)
 							end
@@ -576,6 +618,9 @@ function module.Init(category, connections)
 			autoFarmStatus:SetText("Idle")
 		end
 	end)
+	
+	autoSelectPet = category:AddCheckbox("Auto-select pets")
+	autoSelectPet:SetChecked(true)
 	
 	category:AddButton("Teleport Home", TeleportHome).Inline = true
 	category:AddButton("Teleport Town", TeleportToMainMap)
@@ -592,72 +637,65 @@ function module.Init(category, connections)
 		local eventLabel = category:AddLabel("Idle")
 		local eventMapName = "FireDimension"
 		
-		local lureDuration = 600
-		local lureTimer = lureDuration
+		local cookingDuration, lureDuration = 600, 600
+		local cookingTimer, lureTimer = 0, 0
 		local hasBaits = true
-		local function UseBait(bait_unique)
-			if autoEvents.Checked and hasBaits and tick() - lureTimer > lureDuration then
-				TeleportHome()
-				for furniture_unique,furniture in pairs(GetClientData().house_interior.furniture) do
-					if furniture.id == "lures_2023_normal_lure" then
-						if furniture.lure then
-							if furniture.lure.finished then
-								eventLabel:SetText("Replacing bait...")
-								HousingAPI.ActivateFurniture:InvokeServer(plr, furniture_unique, "UseBlock", false, plr.Character)
-								task.wait(1)
-								HousingAPI.ActivateFurniture:InvokeServer(plr, furniture_unique, "UseBlock", {bait_unique = bait_unique}, plr.Character)
-								lureTimer = tick()
-							else
-								eventLabel:SetText("Can't use bait yet")
-								lureTimer = furniture.lure.lure_start_timestamp
-							end
-						elseif not furniture.lure then
-							eventLabel:SetText("Using bait...")
-							HousingAPI.ActivateFurniture:InvokeServer(plr, furniture_unique, "UseBlock", {bait_unique = bait_unique}, plr.Character)
-							lureTimer = tick()
-						end
-						return
-					end
-				end
-				eventLabel:SetText("Couldn't find lure! (Restart needed)")
-				hasBaits = false
-			end
-		end
-		
 		local function ShouldCollectIngredients()
 			return GetFoodCount("fire_dimension_2024_sparkling_blaze_berry") < 10 or
 				GetFoodCount("fire_dimension_2024_pyro_pear") < 10 or
 				GetFoodCount("fire_dimension_2024_magma_mango") < 10
 		end
 		
-		local function eventHandler(map)
-			local cooking = map:FindFirstChild("Cooking")
-			if cooking then
-				local locations = cooking:FindFirstChild("IngredientLocations")
-				local pots = cooking:FindFirstChild("Pots")
-				if locations and pots then
-					if ShouldCollectIngredients() then
-						for _,fruitDir in pairs(locations:GetChildren()) do
-							for _,fruitModel in pairs(fruitDir:GetChildren()) do
-								if fruitModel:FindFirstChild("Fruit") then
-									FireDimensionAPI.PickFruit:InvokeServer(fruitDir.Name:lower(), tonumber(fruitModel.Name))
+		eventLock = function()
+			return tick() - cookingTimer <= cookingDuration or tick() - lureTimer <= lureDuration
+		end
+		
+		local function eventHandler()
+			if tick() - cookingTimer > cookingDuration then
+				TeleportToPlace(eventMapName, true)
+				local map = GetInteriorBlueprint()
+				if map then
+					local cooking = map:FindFirstChild("Cooking")
+					if cooking then
+						local locations = cooking:FindFirstChild("IngredientLocations")
+						local pots = cooking:FindFirstChild("Pots")
+						if locations and pots then
+							if ShouldCollectIngredients() then
+								for _,fruitDir in pairs(locations:GetChildren()) do
+									for _,fruitModel in pairs(fruitDir:GetChildren()) do
+										if fruitModel:FindFirstChild("Fruit") then
+											FireDimensionAPI.PickFruit:InvokeServer(fruitDir.Name:lower(), tonumber(fruitModel.Name))
+										end
+									end
 								end
 							end
-						end
-					end
-					local recipe = pots:FindFirstChildWhichIsA("Folder")
-					if recipe then
-						local potModel = recipe:FindFirstChildWhichIsA("Model")
-						if potModel and potModel:FindFirstChild("GlowCircle") then
-							FireDimensionAPI.CookRecipe:InvokeServer(recipe.Name)
+							local recipe = pots:FindFirstChildWhichIsA("Folder")
+							if recipe then
+								local potModel = recipe:FindFirstChildWhichIsA("Model")
+								if potModel and potModel:FindFirstChild("GlowCircle") then
+									FireDimensionAPI.CookRecipe:InvokeServer(recipe.Name)
+									cookingTimer = tick()
+								end
+							end
 						end
 					end
 				end
 			end
 			local bait_unique = GetLowestUsesFood("fire_dimension_2024_burnt_bites_bait")
-			if bait_unique then
-				UseBait(bait_unique)
-				task.wait(1)
+			if autoEvents.Checked and hasBaits and bait_unique and tick() - lureTimer > lureDuration then
+				if TeleportHome() then
+					lureTimer = UseBait(bait_unique)
+					if lureTimer ~= nil then
+						hasBaits = true
+					else
+						eventLabel:SetText("No lures! Restart needed")
+						lureTimer = 0
+						hasBaits = false
+					end
+					task.wait(1)
+				else
+					warn("can't teleport home!")
+				end
 			end
 		end
 		
@@ -665,20 +703,13 @@ function module.Init(category, connections)
 			hasBaits = true
 			if state then
 				task.spawn(function()
-					local map
 					while task.wait(2) and autoEvents.Checked and module.On do
-						map = GetInteriorBlueprint()
-						if not map or map.Name ~= eventMapName then
-							eventLabel:SetText("Teleporting to " .. tostring(eventMapName) .. "...")
-							TeleportToPlace(eventMapName, true)
-						else
-							eventLabel:SetText("Doing event: " .. tostring(eventMapName))
-							local f, err = pcall(eventHandler, map)
-							if not f then
-								eventLabel:SetText("HANDLER ERROR!")
-								warn(err)
-								task.wait(5)
-							end
+						eventLabel:SetText("Doing event: " .. tostring(eventMapName))
+						local f, err = pcall(eventHandler)
+						if not f then
+							warn("eventhandler error:", err)
+							eventLabel:SetText("HANDLER ERROR!")
+							task.wait(5)
 						end
 					end
 					eventLabel:SetText("Idle")
