@@ -324,7 +324,27 @@ function module.Init(category, connections)
 		return lowestFood
 	end
 	
-	local function GetFood(isDrink)
+	local function GetFood(foodId)
+		local foods = {}
+		for _,food in pairs(GetClientData().inventory.food) do
+			if food.id == foodId then
+				table.insert(foods, food.unique)
+			end
+		end
+		return foods
+	end
+	
+	local function GetFoodCount(foodId)
+		local count = 0
+		for _,food in pairs(GetClientData().inventory.food) do
+			if food.id == foodId then
+				count += 1
+			end
+		end
+		return count
+	end
+	
+	local function PrepareFood(isDrink)
 		if isDrink and not GetLowestUsesFood("tea") then
 			ShopAPI.BuyItem:InvokeServer("food", "tea", {})
 			task.wait(1)
@@ -403,13 +423,13 @@ function module.Init(category, connections)
 			end
 		end,
 		["hungry"] = function(ailment_unique, isPlayer)
-			local food_unique = GetFood(false)
+			local food_unique = PrepareFood(false)
 			if not food_unique then
 				return
 			end
 			if isPlayer then
 				repeat
-					food_unique = GetFood(false)
+					food_unique = PrepareFood(false)
 					if not food_unique then
 						return
 					end
@@ -432,13 +452,13 @@ function module.Init(category, connections)
 			end
 		end,
 		["thirsty"] = function(ailment_unique, isPlayer)
-			local drink_unique = GetFood(true)
+			local drink_unique = PrepareFood(true)
 			if not drink_unique then
 				return
 			end
 			if isPlayer then
 				repeat
-					drink_unique = GetFood(true)
+					drink_unique = PrepareFood(true)
 					if not drink_unique then
 						return
 					end
@@ -604,16 +624,24 @@ function module.Init(category, connections)
 			end
 		end
 		
+		local function ShouldCollectIngredients()
+			return GetFoodCount("fire_dimension_2024_sparkling_blaze_berry") < 10 or
+				GetFoodCount("fire_dimension_2024_pyro_pear") < 10 or
+				GetFoodCount("fire_dimension_2024_magma_mango") < 10
+		end
+		
 		local function eventHandler(map)
 			local cooking = map:FindFirstChild("Cooking")
 			if cooking then
 				local locations = cooking:FindFirstChild("IngredientLocations")
 				local pots = cooking:FindFirstChild("Pots")
 				if locations and pots then
-					for _,fruitDir in pairs(locations:GetChildren()) do
-						for _,fruitModel in pairs(fruitDir:GetChildren()) do
-							if fruitModel:FindFirstChild("Fruit") then
-								FireDimensionAPI.PickFruit:InvokeServer(fruitDir.Name:lower(), tonumber(fruitModel.Name))
+					if ShouldCollectIngredients() then
+						for _,fruitDir in pairs(locations:GetChildren()) do
+							for _,fruitModel in pairs(fruitDir:GetChildren()) do
+								if fruitModel:FindFirstChild("Fruit") then
+									FireDimensionAPI.PickFruit:InvokeServer(fruitDir.Name:lower(), tonumber(fruitModel.Name))
+								end
 							end
 						end
 					end
@@ -844,6 +872,9 @@ function module.Init(category, connections)
 		end)
 		category:AddButton("Copy player data", function()
 			setclipboard(_G.Discover(GetClientData(), 6))
+		end)
+		category:AddButton("Copy player inventory", function()
+			setclipboard(_G.Discover(GetClientData().inventory, 4))
 		end)
 		category:AddButton("Copy API", function()
 			setclipboard(_G.Discover(debugApiTable))
