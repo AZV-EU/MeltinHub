@@ -650,7 +650,7 @@ function module.Init(category, connections)
 		end
 		
 		eventLock = function()
-			return tick() - _G.cookingTimer <= cookingDuration or tick() - _G.lureTimer <= lureDuration
+			return tick() - _G.cookingTimer >= (cookingDuration - 3) or tick() - _G.lureTimer >= (lureDuration - 3)
 		end
 		
 		local function eventHandler()
