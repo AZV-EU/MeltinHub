@@ -684,6 +684,9 @@ function module.Init(category, connections)
 						end
 					end
 				end
+			else
+				eventLabel:SetText(string.format("Can cook in %d seconds", math.floor(tick() - _G.cookingTimer)))
+				task.wait(2)
 			end
 			local bait_unique = GetLowestUsesFood("fire_dimension_2024_burnt_bites_bait")
 			if autoEvents.Checked and hasBaits and bait_unique and tick() - _G.lureTimer > lureDuration then
@@ -692,12 +695,13 @@ function module.Init(category, connections)
 					if _G.lureTimer ~= nil then
 						hasBaits = true
 					else
-						eventLabel:SetText("No lures! Restart needed")
 						_G.lureTimer = 0
 						hasBaits = false
 					end
-					task.wait(1)
 				end
+			end
+			if _G.lureTimer > 0 then
+				eventLabel:SetText(string.format("Can use lure in %d seconds", math.floor(tick() - _G.lureTimer)))
 			end
 		end
 		
