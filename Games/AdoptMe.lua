@@ -327,8 +327,10 @@ function module.Init(category, connections)
 	local function GetFood(isDrink)
 		if isDrink and not GetLowestUsesFood("tea") then
 			ShopAPI.BuyItem:InvokeServer("food", "tea", {})
+			task.wait(1)
 		elseif not isDrink and not GetLowestUsesFood("pizza") then
-			print("buy item:", ShopAPI.BuyItem:InvokeServer("food", "pizza", {}))
+			ShopAPI.BuyItem:InvokeServer("food", "pizza", {})
+			task.wait(1)
 			ToolAPI.BakeItem:InvokeServer()
 			task.wait(3)
 		end
@@ -351,7 +353,7 @@ function module.Init(category, connections)
 		end
 	end
 	
-	local autoFarm = category:AddCheckbox("Auto-farm")
+	local autoFarm
 	
 	local function IsAilmentDone(ailment_unique, isPlayer)
 		return GetAilmentFromUnique(ailment_unique, isPlayer) == nil
@@ -510,45 +512,47 @@ function module.Init(category, connections)
 	local autoSelectPet = category:AddCheckbox("Auto-select pets")
 	autoSelectPet:SetChecked(true)
 	
-	task.spawn(function()
-		local pet, ailments
-		while task.wait(2) and module.On do
-			if autoFarm.Checked then
-				pet = GetEquippedPet()
-				if (not pet or pet.properties.age >= 6) and autoSelectPet.Checked then
-					pet = AutoSelectPet()
-				end
-				if pet and pet.properties.age < 6 then
-					ReequipPet(pet)
-					if Pet.Current and Pet.Model and Pet.Model.Parent == PetsModel then
-						for _, ailment in pairs(GetPetAilments()) do
-							if not autoFarm.Checked or not module.On then break end
-							if AilmentFuncTable[ailment.id] then
-								autoFarmStatus:SetText("Doing pet task '" .. tostring(ailment.id) .. "'...")
-								local f, err = pcall(AilmentFuncTable[ailment.id], ailment.unique, false)
-								if not f then
-									warn(err)
-								else
-									task.wait(1)
+	autoFarm = category:AddCheckbox("Auto-farm", function(state)
+		if state then
+			task.spawn(function()
+				local pet, ailments
+				while task.wait(2) and autoFarm.Checked and module.On do
+					pet = GetEquippedPet()
+					if (not pet or pet.properties.age >= 6) and autoSelectPet.Checked then
+						pet = AutoSelectPet()
+					end
+					if pet and pet.properties.age < 6 then
+						ReequipPet(pet)
+						if Pet.Current and Pet.Model and Pet.Model.Parent == PetsModel then
+							for _, ailment in pairs(GetPetAilments()) do
+								if not autoFarm.Checked or not module.On then break end
+								if AilmentFuncTable[ailment.id] then
+									autoFarmStatus:SetText("Doing pet task '" .. tostring(ailment.id) .. "'...")
+									local f, err = pcall(AilmentFuncTable[ailment.id], ailment.unique, false)
+									if not f then
+										warn(err)
+									else
+										task.wait(1)
+									end
 								end
 							end
 						end
 					end
-				end
-				for _, ailment in pairs(GetPlayerAilments()) do
-					if not autoFarm.Checked or not module.On then break end
-					if AilmentFuncTable[ailment.id] then
-						autoFarmStatus:SetText("Doing player task '" .. tostring(ailment.id) .. "'...")
-						local f, err = pcall(AilmentFuncTable[ailment.id], ailment.unique, true)
-						if not f then
-							warn(err)
+					for _, ailment in pairs(GetPlayerAilments()) do
+						if not autoFarm.Checked or not module.On then break end
+						if AilmentFuncTable[ailment.id] then
+							autoFarmStatus:SetText("Doing player task '" .. tostring(ailment.id) .. "'...")
+							local f, err = pcall(AilmentFuncTable[ailment.id], ailment.unique, true)
+							if not f then
+								warn(err)
+							end
 						end
 					end
+					autoFarmStatus:SetText("Waiting for tasks...")
+				else
+					autoFarmStatus:SetText("Idle")
 				end
-				autoFarmStatus:SetText("Waiting for tasks...")
-			else
-				autoFarmStatus:SetText("Idle")
-			end
+			end)
 		end
 	end)
 	

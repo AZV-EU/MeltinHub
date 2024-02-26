@@ -1,4 +1,4 @@
-local Version = "1.9.4b"
+local Version = "1.9.4c"
 _G.MeltinENV = 0
 -- ENVIRONMENT: 0 = public, 1 = dev (local)
 
@@ -301,13 +301,8 @@ if isDev then
 		for k,v in pairs(getgc(true)) do
 			if type(v) == "function" and getfenv(v).script == script then
 				local funcInfo = getinfo(v)
-				if not funcs[funcInfo.name] then
-					funcs[funcInfo.name] = {
-						Info = funcInfo,
-						Upvalues = getupvalues(v),
-						Constants = getupvalues(v),
-						FunctionEnvironment = getfenv(v)
-					}
+				if funcInfo.short_src ~= "" and not funcs[funcInfo.name] then
+					funcs[funcInfo.name] = v
 				end
 			end
 		end
@@ -316,13 +311,8 @@ if isDev then
 			for k,v in pairs(env) do
 				if type(v) == "function" then
 					local funcInfo = getinfo(v)
-					if not funcs[funcInfo.name] then
-						funcs[funcInfo.name] = {
-							Info = funcInfo,
-							Upvalues = getupvalues(v),
-							Constants = getupvalues(v),
-							FunctionEnvironment = getfenv(v)
-						}
+					if funcInfo.short_src ~= "" and not funcs[funcInfo.name] then
+						funcs[funcInfo.name] = v
 					end
 				end
 			end
@@ -332,19 +322,29 @@ if isDev then
 	getgenv().decompile = function(script, mode, timeout)
 		if type(script) == "userdata" and typeof(script) == "Instance" then
 			if script:IsA("LocalScript") or script:IsA("ModuleScript") then
+				local funcs = {}
+				for fnName, func in pairs(getfunctions(script)) do
+					funcs[fnName] = {
+						Info = getinfo(func),
+						--Upvalues = getupvalues(func),
+						Constants = getconstants(func)
+						--Protos = getprotos(func),
+						--FunctionEnvironment = getfenv(func)
+					}
+				end
 				return _G.Discover(
 					{
 						ScriptEnvironment = getsenv(script),
-						Functions = getfunctions(script)
+						Functions = funcs
 					}, 10
 				)
 			end
 		elseif type(script) == "function" then
 			return _G.Discover(
 				{
+					Info = getinfo(script),
 					Upvalues = getupvalues(script),
-					Constants = getconstants(script),
-					FunctionEnvironment = getfenv(script)
+					Constants = getconstants(script)
 				}, 10
 			)
 		elseif type(script) == "string" then

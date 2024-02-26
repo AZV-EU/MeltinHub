@@ -4,37 +4,27 @@ local module = {
 }
 
 function module.PreInit()
-	--[[
-	if not _G.AntiTp then
-		local TeleportService = _G.SafeGetService("TeleportService")
-		local OldNameCall = nil
-		OldNameCall = hookmetamethod(game, "__namecall", function(Self, ...)
-			local Args = {...}
-			local NamecallMethod = getnamecallmethod()
-
-			if not checkcaller() and Self == TeleportService and NamecallMethod == "Teleport" then
-				print("Prevented teleport")
-				return nil
-			end
-
-			return OldNameCall(Self, ...)
-		end)
-		print("Setup anti-tp")
-		_G.AntiTp = true
-	end
-	]]
 end
 
-local moduleOn = true
-
 local hand
+local orig_il, orig_ir
 function module.Init(category, connections)
+	local plr = game.Players.LocalPlayer
+	local MainLocalScript = plr:WaitForChild("PlayerScripts"):WaitForChild("MainLocalScript")
+	
+	local Constants = {
+		PlayerReachBlocks = 5.5,
+		BlockSize = 3
+	}
+	Constants.PlayerReach = Constants.PlayerReachBlocks * Constants.BlockSize - 1
+	
+	local RunService = _G.SafeGetService("RunService")
+	local UserInputService = _G.SafeGetService("UserInputService")
 	local ReplicatedStorage = _G.SafeGetService("ReplicatedStorage")
 
-	local plr = game.Players.LocalPlayer
 	local PlayerGui = plr:WaitForChild("PlayerGui")
 	local hud = PlayerGui:WaitForChild("HUDGui")
-
+	
 	local function FixGui()
 		task.spawn(function()
 			-- remove gamepasses
@@ -47,10 +37,28 @@ function module.Init(category, connections)
 			
 			-- remove pesky paid items
 			hud:WaitForChild("Inventory"):WaitForChild("Inventory").Visible = false
+			
+			task.wait(3)
+			if PlayerGui:FindFirstChild("LoadingGui") then
+				PlayerGui.LoadingGui:Destroy()
+			end
 		end)
 	end
 	FixGui()
 	table.insert(connections, plr.CharacterAdded:Connect(FixGui))
+	
+	do
+		local env = getsenv(MainLocalScript)
+		orig_il, orig_ir = env.itemleft, env.itemright
+		env.itemleft = function(...)
+			print("itemleft:", _G.Discover({...}))
+			orig_il(...)
+		end
+		env.itemright = function(...)
+			print("itemright:", _G.Discover({...}))
+			orig_ir(...)
+		end
+	end
 	
 	-- mute music
 	spawn(function()
@@ -87,10 +95,6 @@ function module.Init(category, connections)
 	end
 	
 	plr.CameraMaxZoomDistance = 1000
-
-	local RunService = _G.SafeGetService("RunService")
-	local UserInputService = _G.SafeGetService("UserInputService")
-	local MainLocalScript = plr:WaitForChild("PlayerScripts"):WaitForChild("MainLocalScript")
 	local CWorld = require(MainLocalScript:WaitForChild("CWorld"))
 
 	local GameRemotes = ReplicatedStorage:WaitForChild("GameRemotes")
@@ -149,7 +153,7 @@ function module.Init(category, connections)
 	local cooldown = 0
 	local attackSlot = 1
 	coroutine.resume(coroutine.create(function()
-		while moduleOn and task.wait(.33) do
+		while task.wait(.33) and module.On do
 			if autoAttack.Checked then
 				local closest, dist = nil, 0
 				local tdist = 0
@@ -202,12 +206,6 @@ function module.Init(category, connections)
 			end)
 		end
 	end)
-	
-	local Constants = {
-		PlayerReachBlocks = 5.5,
-		BlockSize = 3
-	}
-	Constants.PlayerReach = Constants.PlayerReachBlocks * Constants.BlockSize - 1
 
 	local function getBlock(x,y,z)
 		local chunk
@@ -304,7 +302,10 @@ function module.Init(category, connections)
 end
 
 function module.Shutdown()
-	moduleOn = false
+	local plr = game.Players.LocalPlayer
+	local MainLocalScript = plr:WaitForChild("PlayerScripts"):WaitForChild("MainLocalScript")
+	local env = getsenv(MainLocalScript)
+	env.itemleft, env.itemright = orig_il, orig_ir
 end
 
 return module
