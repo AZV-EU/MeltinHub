@@ -650,10 +650,13 @@ function module.Init(category, connections)
 		end
 		
 		eventLock = function()
-			return tick() - _G.cookingTimer >= (cookingDuration - 3) or tick() - _G.lureTimer >= (lureDuration - 3)
+			return autoEvents.Checked and (tick() - _G.cookingTimer >= (cookingDuration - 3) or (hasBaits and tick() - _G.lureTimer >= (lureDuration - 3)))
 		end
 		
 		local function eventHandler()
+			if tick() - _G.lureTimer < 0 then
+				_G.lureTimer = 0
+			end
 			if tick() - _G.cookingTimer > cookingDuration then
 				if TeleportToPlace(eventMapName, true) then
 					local map = GetInteriorBlueprint()
@@ -702,6 +705,11 @@ function module.Init(category, connections)
 					string.format("COOK [%d s] BAIT [%d s]",
 					math.floor(600 - (tick() - _G.cookingTimer)),
 					math.floor(600 - (tick() - _G.lureTimer))
+				))
+			else
+				eventLabel:SetText(
+					string.format("COOK [%d s] !NO LURE!",
+					math.floor(600 - (tick() - _G.cookingTimer))
 				))
 			end
 		end
