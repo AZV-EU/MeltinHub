@@ -686,13 +686,10 @@ function module.Init(category, connections)
 									local potModel = recipe:FindFirstChildWhichIsA("Model")
 									if potModel and potModel:FindFirstChild("GlowCircle") then
 										FireDimensionAPI.CookRecipe:InvokeServer(recipe.Name)
+										_G.cookingTimer = tick()
 									end
 								end
 							end
-						end
-						local recipeData = GetClientData().fire_dimension_2024_daily_recipe
-						if recipeData then
-							_G.cookingTimer = recipeData.next_cycle_timestamp
 						end
 					end
 				end
