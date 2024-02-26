@@ -549,10 +549,11 @@ function module.Init(category, connections)
 						end
 					end
 					autoFarmStatus:SetText("Waiting for tasks...")
-				else
-					autoFarmStatus:SetText("Idle")
 				end
+				autoFarmStatus:SetText("Idle")
 			end)
+		else
+			autoFarmStatus:SetText("Idle")
 		end
 	end)
 	
