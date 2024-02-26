@@ -644,19 +644,25 @@ function module.Init(category, connections)
 		
 		local hasBaits = true
 		local function ShouldCollectIngredients()
-			return GetFoodCount("fire_dimension_2024_sparkling_blaze_berry") < 10 or
-				GetFoodCount("fire_dimension_2024_pyro_pear") < 10 or
-				GetFoodCount("fire_dimension_2024_magma_mango") < 10
+			local recipeData = GetClientData().fire_dimension_2024_daily_recipe
+			if autoEvents.Checked and recipeData and recipeData.recipe then
+				for ingredient,amount in pairs(recipeData.recipe) do
+					if GetFoodCount(ingredient) < amount then
+						return true
+					end
+				end
+			end
+			return false
 		end
 		
 		eventLock = function()
 			return autoEvents.Checked and (tick() - _G.cookingTimer >= (cookingDuration - 3) or (hasBaits and tick() - _G.lureTimer >= (lureDuration - 3)))
 		end
 		
+		if tick() - _G.cookingTimer < 0 then _G.cookingTimer = 0 end
+		if tick() - _G.lureTimer < 0 then _G.lureTimer = 0 end
+		
 		local function eventHandler()
-			if tick() - _G.lureTimer < 0 then
-				_G.lureTimer = 0
-			end
 			if tick() - _G.cookingTimer > cookingDuration then
 				if TeleportToPlace(eventMapName, true) then
 					local map = GetInteriorBlueprint()
@@ -686,7 +692,7 @@ function module.Init(category, connections)
 						end
 						local recipeData = GetClientData().fire_dimension_2024_daily_recipe
 						if recipeData then
-							_G.cookingTimer = next_cycle_timestamp
+							_G.cookingTimer = recipeData.next_cycle_timestamp
 						end
 					end
 				end
