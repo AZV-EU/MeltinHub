@@ -638,7 +638,10 @@ function module.Init(category, connections)
 		local eventMapName = "FireDimension"
 		
 		local cookingDuration, lureDuration = 600, 600
-		local cookingTimer, lureTimer = 0, 0
+		
+		if not _G.cookingTimer then _G.cookingTimer = 0 end
+		if not _G.lureTimer then _G.lureTimer = 0 end
+		
 		local hasBaits = true
 		local function ShouldCollectIngredients()
 			return GetFoodCount("fire_dimension_2024_sparkling_blaze_berry") < 10 or
@@ -647,34 +650,35 @@ function module.Init(category, connections)
 		end
 		
 		eventLock = function()
-			return tick() - cookingTimer <= cookingDuration or tick() - lureTimer <= lureDuration
+			return tick() - _G.cookingTimer <= cookingDuration or tick() - _G.lureTimer <= lureDuration
 		end
 		
 		local function eventHandler()
-			if tick() - cookingTimer > cookingDuration then
-				TeleportToPlace(eventMapName, true)
-				local map = GetInteriorBlueprint()
-				if map then
-					local cooking = map:FindFirstChild("Cooking")
-					if cooking then
-						local locations = cooking:FindFirstChild("IngredientLocations")
-						local pots = cooking:FindFirstChild("Pots")
-						if locations and pots then
-							if ShouldCollectIngredients() then
-								for _,fruitDir in pairs(locations:GetChildren()) do
-									for _,fruitModel in pairs(fruitDir:GetChildren()) do
-										if fruitModel:FindFirstChild("Fruit") then
-											FireDimensionAPI.PickFruit:InvokeServer(fruitDir.Name:lower(), tonumber(fruitModel.Name))
+			if tick() - _G.cookingTimer > cookingDuration then
+				if TeleportToPlace(eventMapName, true) then
+					local map = GetInteriorBlueprint()
+					if map then
+						local cooking = map:FindFirstChild("Cooking")
+						if cooking then
+							local locations = cooking:FindFirstChild("IngredientLocations")
+							local pots = cooking:FindFirstChild("Pots")
+							if locations and pots then
+								if ShouldCollectIngredients() then
+									for _,fruitDir in pairs(locations:GetChildren()) do
+										for _,fruitModel in pairs(fruitDir:GetChildren()) do
+											if fruitModel:FindFirstChild("Fruit") then
+												FireDimensionAPI.PickFruit:InvokeServer(fruitDir.Name:lower(), tonumber(fruitModel.Name))
+											end
 										end
 									end
 								end
-							end
-							local recipe = pots:FindFirstChildWhichIsA("Folder")
-							if recipe then
-								local potModel = recipe:FindFirstChildWhichIsA("Model")
-								if potModel and potModel:FindFirstChild("GlowCircle") then
-									FireDimensionAPI.CookRecipe:InvokeServer(recipe.Name)
-									cookingTimer = tick()
+								local recipe = pots:FindFirstChildWhichIsA("Folder")
+								if recipe then
+									local potModel = recipe:FindFirstChildWhichIsA("Model")
+									if potModel and potModel:FindFirstChild("GlowCircle") then
+										FireDimensionAPI.CookRecipe:InvokeServer(recipe.Name)
+										_G.cookingTimer = tick()
+									end
 								end
 							end
 						end
@@ -682,19 +686,17 @@ function module.Init(category, connections)
 				end
 			end
 			local bait_unique = GetLowestUsesFood("fire_dimension_2024_burnt_bites_bait")
-			if autoEvents.Checked and hasBaits and bait_unique and tick() - lureTimer > lureDuration then
+			if autoEvents.Checked and hasBaits and bait_unique and tick() - _G.lureTimer > lureDuration then
 				if TeleportHome() then
-					lureTimer = UseBait(bait_unique)
-					if lureTimer ~= nil then
+					_G.lureTimer = UseBait(bait_unique)
+					if _G.lureTimer ~= nil then
 						hasBaits = true
 					else
 						eventLabel:SetText("No lures! Restart needed")
-						lureTimer = 0
+						_G.lureTimer = 0
 						hasBaits = false
 					end
 					task.wait(1)
-				else
-					warn("can't teleport home!")
 				end
 			end
 		end
