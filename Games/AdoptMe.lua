@@ -732,7 +732,7 @@ function module.Init(category, connections)
 			hasBaits = true
 			if state then
 				task.spawn(function()
-					while task.wait(2) and autoEvents.Checked and module.On do
+					while task.wait(1) and autoEvents.Checked and module.On do
 						eventLabel:SetText("Doing event: " .. tostring(eventMapName))
 						local f, err = pcall(eventHandler)
 						if not f then
@@ -888,7 +888,7 @@ function module.Init(category, connections)
 		local autoAccept
 		autoAccept = category:AddCheckbox("Auto-accept trades", function(state)
 			if state then
-				while autoAccept.Checked and module.On and task.wait(1) do
+				while autoAccept.Checked and module.On do
 					for k,v in pairs(game.Players:GetPlayers()) do
 						if v ~= plr then
 							TradeAPI.AcceptOrDeclineTradeRequest:InvokeServer(v,true)
@@ -901,14 +901,17 @@ function module.Init(category, connections)
 							TradeAPI.AcceptNegotiation:FireServer()
 							TradeAPI.ConfirmTrade:FireServer()
 						until not PlayerGui.TradeApp.Frame.Visible or not masterPlayer or not transfering or not module.On
+					else
+						task.wait(1)
 					end
 					
 					if PlayerGui.DialogApp.Dialog.NormalDialog.Buttons:FindFirstChild("ButtonTemplate") then
 						for _,v in pairs(getconnections(PlayerGui.DialogApp.Dialog.NormalDialog.Buttons.ButtonTemplate.MouseButton1Click)) do
-							--v.Function()
+							v.Function()
 							v:Fire()
 						end
 					end
+					task.wait(1)
 				end
 			end
 		end)
