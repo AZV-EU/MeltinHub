@@ -888,18 +888,20 @@ function module.Init(category, connections)
 		local autoAccept
 		autoAccept = category:AddCheckbox("Auto-accept trades", function(state)
 			if state then
-				while autoAccept.Checked and module.On and task.wait(2) do
+				while autoAccept.Checked and module.On and task.wait(1) do
 					for k,v in pairs(game.Players:GetPlayers()) do
 						if v ~= plr then
 							TradeAPI.AcceptOrDeclineTradeRequest:InvokeServer(v,true)
 						end
 					end
 					
-					repeat
-						task.wait(1)
-						TradeAPI.AcceptNegotiation:FireServer()
-						TradeAPI.ConfirmTrade:FireServer()
-					until not PlayerGui.TradeApp.Frame.Visible or not masterPlayer or not transfering or not module.On
+					if PlayerGui.TradeApp.Frame.Visible then
+						repeat
+							task.wait(.5)
+							TradeAPI.AcceptNegotiation:FireServer()
+							TradeAPI.ConfirmTrade:FireServer()
+						until not PlayerGui.TradeApp.Frame.Visible or not masterPlayer or not transfering or not module.On
+					end
 					
 					if PlayerGui.DialogApp.Dialog.NormalDialog.Buttons:FindFirstChild("ButtonTemplate") then
 						for _,v in pairs(getconnections(PlayerGui.DialogApp.Dialog.NormalDialog.Buttons.ButtonTemplate.MouseButton1Click)) do
