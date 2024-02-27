@@ -384,12 +384,20 @@ function module.Init(category, connections)
 		return count
 	end
 	
+	local buyCooldown = 10 * 60
+	if not _G.buyLimitReached then _G.buyLimitReached = 0 end
 	local function PrepareFood(isDrink)
 		if isDrink and not GetLowestUsesFood("tea") then
-			ShopAPI.BuyItem:InvokeServer("food", "tea", {})
+			if not ShopAPI.BuyItem:InvokeServer("food", "tea", {}) then
+				_G.buyLimitReached = tick()
+				return
+			end
 			task.wait(1)
 		elseif not isDrink and not GetLowestUsesFood("pizza") then
-			ShopAPI.BuyItem:InvokeServer("food", "pizza", {})
+			if not ShopAPI.BuyItem:InvokeServer("food", "pizza", {}) then
+				_G.buyLimitReached = tick()
+				return
+			end
 			task.wait(1)
 			ToolAPI.BakeItem:InvokeServer()
 			task.wait(3)
@@ -473,17 +481,16 @@ function module.Init(category, connections)
 			end
 		end},
 		["hungry"] = {RequiresTeleport = false, Function = function(ailment_unique, isPlayer)
+			if tick() - _G.buyLimitReached < buyCooldown then return end
 			local food_unique = PrepareFood(false)
-			if not food_unique then
-				return
-			end
+			if not food_unique then return end
 			if isPlayer then
 				repeat
 					food_unique = PrepareFood(false)
 					if not food_unique then
 						return
 					end
-					ToolAPI.Equip:InvokeServer(food_unique, {})
+					ToolAPI.Equip:InvokeServer(food_unique)
 					ToolAPI.ServerUseTool:FireServer(food_unique, "START")
 					ToolAPI.ServerUseTool:FireServer(food_unique, "END")
 					task.wait(1)
@@ -492,7 +499,7 @@ function module.Init(category, connections)
 					ToolAPI.Unequip:InvokeServer(food_unique)
 				end
 			else
-				ToolAPI.Equip:InvokeServer(food_unique, {})
+				ToolAPI.Equip:InvokeServer(food_unique)
 				task.wait(.33)
 				PetObjectAPI.CreatePetObject:InvokeServer("__Enum_PetObjectCreatorType_2", {unique_id = food_unique})
 				task.wait(.33)
@@ -502,6 +509,7 @@ function module.Init(category, connections)
 			end
 		end},
 		["thirsty"] = {RequiresTeleport = false, Function = function(ailment_unique, isPlayer)
+			if tick() - _G.buyLimitReached < buyCooldown then return end
 			local drink_unique = PrepareFood(true)
 			if not drink_unique then
 				return
@@ -659,10 +667,10 @@ function module.Init(category, connections)
 			return autoEvents.Checked and (tick() - _G.cookingTimer >= (cookingDuration - 3) or (hasBaits and tick() - _G.lureTimer >= (lureDuration - 3)))
 		end
 		
-		if tick() - _G.cookingTimer < 0 then _G.cookingTimer = 0 end
-		if tick() - _G.lureTimer < 0 then _G.lureTimer = 0 end
-		
 		local function eventHandler()
+			if cookingDuration - (tick() - _G.cookingTimer) > 1000 then _G.cookingTimer = 0 end
+			if lureDuration - (tick() - _G.lureTimer) > 1000 then _G.lureTimer = 0 end
+			
 			if tick() - _G.cookingTimer > cookingDuration then
 				if TeleportToPlace(eventMapName, true) then
 					local map = GetInteriorBlueprint()
@@ -709,13 +717,13 @@ function module.Init(category, connections)
 			if _G.lureTimer > 0 then
 				eventLabel:SetText(
 					string.format("COOK [%d s] BAIT [%d s]",
-					math.floor(600 - (tick() - _G.cookingTimer)),
-					math.floor(600 - (tick() - _G.lureTimer))
+					math.floor(cookingDuration - (tick() - _G.cookingTimer)),
+					math.floor(lureDuration - (tick() - _G.lureTimer))
 				))
 			else
 				eventLabel:SetText(
 					string.format("COOK [%d s] !NO LURE!",
-					math.floor(600 - (tick() - _G.cookingTimer))
+					math.floor(cookingDuration - (tick() - _G.cookingTimer))
 				))
 			end
 		end
