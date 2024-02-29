@@ -1,4 +1,4 @@
-local Version = "1.9.5o"
+local Version = "1.9.6"
 _G.MeltinENV = 0
 -- ENVIRONMENT: 0 = public, 1 = dev (local)
 
@@ -319,8 +319,54 @@ if isDev then
 		end
 		return funcs
 	end
+	
+	if getprotos_orig then
+		getgenv().getprotos = getprotos_orig
+	end
+	getgenv().getprotos_orig = getprotos or debug.getprotos
+	getgenv().getprotos = function(script)
+		if not script then return {} end
+		if typeof(script) == "Instance" and (script:IsA("LocalScript") or script:IsA("ModuleScript")) then
+			local funcs = {}
+			for k,v in pairs(getgc()) do
+				if type(v) == "function" then
+					local funcInfo = getinfo(v)
+					local sc = getfenv(v).script
+					if sc == script and funcInfo.name == "" then
+						table.insert(funcs, {
+							Info = funcInfo,
+							Constants = getconstants(v)
+							--Upvalues = getupvalues(v),
+							--Protos = getprotos(v)
+						})
+					end
+				end
+			end
+			return funcs
+		end
+		return getprotos_orig(script)
+	end
+	
+	getgenv().findfunctions = function(script, constant)
+		local funcs = {}
+		if typeof(script) == "Instance" and (script:IsA("LocalScript") or script:IsA("ModuleScript")) then
+			for k,v in pairs(getgc()) do
+				if type(v) == "function" then
+					local sc = getfenv(v).script
+					if sc == script then
+						local constants = getconstants(v)
+						if table.find(constants, constant) then
+							table.insert(funcs, v)
+						end
+					end
+				end
+			end
+		end
+		return funcs
+	end
+	
 	getgenv().decompile = function(script, mode, timeout)
-		if type(script) == "userdata" and typeof(script) == "Instance" then
+		if typeof(script) == "Instance" then
 			if script:IsA("LocalScript") or script:IsA("ModuleScript") then
 				local funcs = {}
 				for fnName, func in pairs(getfunctions(script)) do
@@ -328,7 +374,7 @@ if isDev then
 						Info = getinfo(func),
 						--Upvalues = getupvalues(func),
 						Constants = getconstants(func)
-						--Protos = getprotos(func),
+						--Protos = getprotos(func)
 						--FunctionEnvironment = getfenv(func)
 					}
 				end

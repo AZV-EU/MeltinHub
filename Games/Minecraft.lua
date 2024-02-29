@@ -7,7 +7,6 @@ function module.PreInit()
 end
 
 local hand
-local orig_il, orig_ir
 function module.Init(category, connections)
 	local plr = game.Players.LocalPlayer
 	local MainLocalScript = plr:WaitForChild("PlayerScripts"):WaitForChild("MainLocalScript")
@@ -47,19 +46,6 @@ function module.Init(category, connections)
 	FixGui()
 	table.insert(connections, plr.CharacterAdded:Connect(FixGui))
 	
-	do
-		local env = getsenv(MainLocalScript)
-		orig_il, orig_ir = env.itemleft, env.itemright
-		env.itemleft = function(...)
-			print("itemleft:", _G.Discover({...}))
-			orig_il(...)
-		end
-		env.itemright = function(...)
-			print("itemright:", _G.Discover({...}))
-			orig_ir(...)
-		end
-	end
-	
 	-- mute music
 	spawn(function()
 		for k,v in pairs(ReplicatedStorage:WaitForChild("Music"):GetChildren()) do
@@ -72,6 +58,9 @@ function module.Init(category, connections)
 	-- auto show/hide hand & crosshair
 	local cam = game.Workspace.CurrentCamera
 	if cam then
+		local function getCamZoom()
+			return (cam.CFrame.Position - cam.Focus.Position).Magnitude
+		end
 		local hand
 		local function SetHandVisible(visible)
 			hand = cam:FindFirstChild("Hand")
@@ -90,8 +79,19 @@ function module.Init(category, connections)
 			end
 		end
 		table.insert(connections, game.Workspace.CurrentCamera:GetPropertyChangedSignal("CFrame"):Connect(function()
-			SetHandVisible((cam.CFrame.Position - cam.Focus.Position).Magnitude <= 0.5)
+			SetHandVisible(getCamZoom() <= 0.5)
 		end))
+		
+		if UserInputService.TouchEnabled and not _G.mc_scroll_fix then
+			print("applying minecraft scroll fix")
+			local scrollFunc = findfunctions(MainLocalScript, Enum.UserInputType.MouseWheel)[1]
+			hookfunction(scrollFunc, function(input)
+				--[[if (getCamZoom() <= .5) then
+					return scrollFunc(input)
+				end]]
+				return -- do nothing instead
+			end)
+		end
 	end
 	
 	plr.CameraMaxZoomDistance = 1000
