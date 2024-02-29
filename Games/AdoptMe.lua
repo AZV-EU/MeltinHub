@@ -250,22 +250,25 @@ function module.Init(category, connections)
 	end
 	
 	local function UseBait(bait_unique)
-		for furniture_unique,furniture in pairs(GetClientData().house_interior.furniture) do
-			if furniture.id == "lures_2023_normal_lure" then
-				if furniture.lure then
-					if furniture.lure.finished then
-						HousingAPI.ActivateFurniture:InvokeServer(plr, furniture_unique, "UseBlock", false, plr.Character)
-						task.wait(1)
+		local houseInterior = clientData.get("house_interior")
+		if houseInterior and houseInterior.furniture then
+			for furniture_unique,furniture in pairs(houseInterior.furniture) do
+				if furniture.id == "lures_2023_normal_lure" then
+					if furniture.lure then
+						if furniture.lure.finished then
+							HousingAPI.ActivateFurniture:InvokeServer(plr, furniture_unique, "UseBlock", false, plr.Character)
+							task.wait(1)
+							HousingAPI.ActivateFurniture:InvokeServer(plr, furniture_unique, "UseBlock", {bait_unique = bait_unique}, plr.Character)
+							return tick()
+						else
+							return furniture.lure.lure_start_timestamp
+						end
+					elseif not furniture.lure then
 						HousingAPI.ActivateFurniture:InvokeServer(plr, furniture_unique, "UseBlock", {bait_unique = bait_unique}, plr.Character)
 						return tick()
-					else
-						return furniture.lure.lure_start_timestamp
 					end
-				elseif not furniture.lure then
-					HousingAPI.ActivateFurniture:InvokeServer(plr, furniture_unique, "UseBlock", {bait_unique = bait_unique}, plr.Character)
-					return tick()
+					return
 				end
-				return
 			end
 		end
 	end
@@ -728,7 +731,7 @@ function module.Init(category, connections)
 			end
 			local cookSeconds, cookMinutes = _G.TimeComponents(_G.nextCookTimestamp - tick())
 			if _G.lureTimer > 0 then
-				local lureSeconds, lureMinutes = _G.TimeComponents(tick() - _G.lureTimer)
+				local lureSeconds, lureMinutes = _G.TimeComponents(_G.lureTimer + lureDuration - tick())
 				eventLabel:SetText(
 					string.format("COOK: [%02d:%02d] LURE: [%02d:%02d]",
 					cookMinutes, cookSeconds,
