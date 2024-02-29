@@ -676,8 +676,9 @@ function module.Init(category, connections)
 			end
 		end
 		
+		local handlerLock = false
 		eventLock = function()
-			return autoEvents.Checked and (tick() >= _G.nextCookTimestamp or canCook() or (hasBaits and tick() - _G.lureTimer >= (lureDuration - 3)))
+			return autoEvents.Checked and not handlerLock
 		end
 		
 		local function eventHandler()
@@ -688,6 +689,7 @@ function module.Init(category, connections)
 			if lureDuration - (tick() - _G.lureTimer) > 1000 then _G.lureTimer = 0 end
 			
 			if canCook() then
+				handlerLock = true
 				if TeleportToPlace(eventMapName, true) then
 					local map = GetInteriorBlueprint()
 					if map then
@@ -719,6 +721,7 @@ function module.Init(category, connections)
 			end
 			local bait_unique = GetLowestUsesFood("fire_dimension_2024_burnt_bites_bait")
 			if autoEvents.Checked and hasBaits and bait_unique and tick() - _G.lureTimer > lureDuration then
+				handlerLock = true
 				if TeleportHome() then
 					_G.lureTimer = UseBait(bait_unique)
 					if _G.lureTimer ~= nil then
@@ -743,6 +746,7 @@ function module.Init(category, connections)
 					cookMinutes, cookSeconds
 				))
 			end
+			handlerLock = false
 		end
 		
 		autoEvents = category:AddCheckbox("Auto-event", function(state)
