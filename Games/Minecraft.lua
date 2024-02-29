@@ -83,7 +83,6 @@ function module.Init(category, connections)
 		end))
 		
 		if UserInputService.TouchEnabled and not _G.mc_scroll_fix then
-			print("applying minecraft scroll fix")
 			local scrollFunc = findfunctions(MainLocalScript, Enum.UserInputType.MouseWheel)[1]
 			hookfunction(scrollFunc, function(input)
 				--[[if (getCamZoom() <= .5) then
@@ -91,6 +90,8 @@ function module.Init(category, connections)
 				end]]
 				return -- do nothing instead
 			end)
+			_G.mc_scroll_fix = true
+			print("applied scroll fix")
 		end
 	end
 	
