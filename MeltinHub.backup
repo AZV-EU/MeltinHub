@@ -1,4 +1,4 @@
-local Version = "1.9.6a"
+local Version = "1.9.6b"
 _G.MeltinENV = 1
 -- ENVIRONMENT: 0 = public, 1 = dev (local)
 
@@ -194,6 +194,17 @@ function _G.Stringify(obj, no_quotas)
 	return (no_quotas or not tostring(obj):NeedsQuotas()) and tostring(obj) or string.format("\"%s\"", tostring(obj))
 end
 
+function _G.TimeComponents(timestamp)
+	local seconds = timestamp
+	local mins = math.floor(timestamp/60)
+	seconds = math.floor(seconds - mins*60)
+	local hours = math.floor(mins/60)
+	mins = math.floor(mins - hours*60)
+	local days = math.floor(hours/24)
+	hours = math.floor(hours - days*24)
+	return seconds, mins, hours, days
+end
+
 do
 	local function TableContainsData(tab)
 		if type(tab) == "table" then
@@ -333,12 +344,7 @@ if isDev then
 					local funcInfo = getinfo(v)
 					local sc = getfenv(v).script
 					if sc == script and funcInfo.name == "" then
-						table.insert(funcs, {
-							Info = funcInfo,
-							Constants = getconstants(v)
-							--Upvalues = getupvalues(v),
-							--Protos = getprotos(v)
-						})
+						table.insert(funcs, v)
 					end
 				end
 			end
@@ -349,7 +355,24 @@ if isDev then
 	
 	getgenv().findfunctions = function(script, constant)
 		local funcs = {}
-		if typeof(script) == "Instance" and (script:IsA("LocalScript") or script:IsA("ModuleScript")) then
+		if not script then
+			for k,v in pairs(getgc()) do
+				if type(v) == "function" then
+					local sc = getfenv(v).script
+					if sc and sc.Parent then
+						local funcInfo = getinfo(v)
+						if funcInfo.short_src ~= "" then
+							pcall(function()
+								local constants = getconstants(v)
+								if table.find(constants, constant) then
+									table.insert(funcs, v)
+								end
+							end)
+						end
+					end
+				end
+			end
+		elseif typeof(script) == "Instance" and (script:IsA("LocalScript") or script:IsA("ModuleScript")) then
 			for k,v in pairs(getgc()) do
 				if type(v) == "function" then
 					local sc = getfenv(v).script

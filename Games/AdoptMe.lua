@@ -647,12 +647,12 @@ function module.Init(category, connections)
 		
 		local cookingDuration, lureDuration = 600, 600
 		
-		if not _G.cookingTimer then _G.cookingTimer = 0 end
+		if not _G.nextCookTimestamp then _G.nextCookTimestamp = 0 end
 		if not _G.lureTimer then _G.lureTimer = 0 end
 		
 		local hasBaits = true
-		local function ShouldCollectIngredients()
-			local recipeData = GetClientData().fire_dimension_2024_daily_recipe
+		local function shouldCollectIngredients()
+			local recipeData = clientData.get("fire_dimension_2024_daily_recipe")
 			if autoEvents.Checked and recipeData and recipeData.recipe then
 				for ingredient,amount in pairs(recipeData.recipe) do
 					if GetFoodCount(ingredient) < amount then
@@ -663,15 +663,28 @@ function module.Init(category, connections)
 			return false
 		end
 		
+		local function canCook()
+			local recipeData = clientData.get("fire_dimension_2024_daily_recipe")
+			if recipeData then
+				local state = clientData.get("fire_dimension_2024_cooking_state")
+				if state then
+					return recipeData.cycle ~= state.most_recently_completed_cycle
+				end
+			end
+		end
+		
 		eventLock = function()
-			return autoEvents.Checked and (tick() - _G.cookingTimer >= (cookingDuration - 3) or (hasBaits and tick() - _G.lureTimer >= (lureDuration - 3)))
+			return autoEvents.Checked and (tick() >= _G.nextCookTimestamp or canCook() or (hasBaits and tick() - _G.lureTimer >= (lureDuration - 3)))
 		end
 		
 		local function eventHandler()
-			if cookingDuration - (tick() - _G.cookingTimer) > 1000 then _G.cookingTimer = 0 end
+			local recipeData = clientData.get("fire_dimension_2024_daily_recipe")
+			if recipeData then
+				_G.nextCookTimestamp = recipeData.next_cycle_timestamp - 18000
+			end
 			if lureDuration - (tick() - _G.lureTimer) > 1000 then _G.lureTimer = 0 end
 			
-			if tick() - _G.cookingTimer > cookingDuration then
+			if canCook() then
 				if TeleportToPlace(eventMapName, true) then
 					local map = GetInteriorBlueprint()
 					if map then
@@ -680,7 +693,7 @@ function module.Init(category, connections)
 							local locations = cooking:FindFirstChild("IngredientLocations")
 							local pots = cooking:FindFirstChild("Pots")
 							if locations and pots then
-								if ShouldCollectIngredients() then
+								if shouldCollectIngredients() then
 									for _,fruitDir in pairs(locations:GetChildren()) do
 										for _,fruitModel in pairs(fruitDir:GetChildren()) do
 											if fruitModel:FindFirstChild("Fruit") then
@@ -694,7 +707,6 @@ function module.Init(category, connections)
 									local potModel = recipe:FindFirstChildWhichIsA("Model")
 									if potModel and potModel:FindFirstChild("GlowCircle") then
 										FireDimensionAPI.CookRecipe:InvokeServer(recipe.Name)
-										_G.cookingTimer = tick()
 									end
 								end
 							end
@@ -714,16 +726,18 @@ function module.Init(category, connections)
 					end
 				end
 			end
+			local cookSeconds, cookMinutes = _G.TimeComponents(_G.nextCookTimestamp - tick())
 			if _G.lureTimer > 0 then
+				local lureSeconds, lureMinutes = _G.TimeComponents(tick() - _G.lureTimer)
 				eventLabel:SetText(
-					string.format("COOK [%d s] BAIT [%d s]",
-					math.floor(cookingDuration - (tick() - _G.cookingTimer)),
-					math.floor(lureDuration - (tick() - _G.lureTimer))
+					string.format("COOK: [%02d:%02d] LURE: [%02d:%02d]",
+					cookMinutes, cookSeconds,
+					lureMinutes, lureSeconds
 				))
 			else
 				eventLabel:SetText(
-					string.format("COOK [%d s] !NO LURE!",
-					math.floor(cookingDuration - (tick() - _G.cookingTimer))
+					string.format("COOK: [%02d:%02d] !NO LURE!",
+					cookMinutes, cookSeconds
 				))
 			end
 		end
