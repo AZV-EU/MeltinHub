@@ -678,7 +678,7 @@ function module.Init(category, connections)
 		
 		local handlerLock = false
 		eventLock = function()
-			return autoEvents.Checked and not handlerLock
+			return autoEvents.Checked and handlerLock
 		end
 		
 		local function eventHandler()
