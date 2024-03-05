@@ -1,4 +1,4 @@
-local Version = "1.9.7"
+local Version = "1.9.7c"
 _G.MeltinENV = 0
 -- ENVIRONMENT: 0 = public, 1 = dev (local)
 
@@ -50,7 +50,7 @@ print("MeltinHub " .. Version .. ", Game ID =", game.GameId)
 
 local plr = _G.SafeGetService("Players").LocalPlayer
 
-_G.NUKE_KICKATTEMPTS = false
+_G.NUKE_KICKATTEMPTS = true
 
 local repository = {
 	[1903935756] = "Lucky-Block-Tycoon.lua",
@@ -154,7 +154,7 @@ end
 setreadonly(string, true)
 
 function _G.Stringify(obj, no_quotas)
-	if not obj then return "nil" end
+	if obj == nil then return "nil" end
 	if type(obj) == "string" then
 		return obj:find("\n") and string.format("[[%s]]", obj) or (no_quotas and obj or string.format("\"%s\"", obj))
 	elseif type(obj) == "number" then
@@ -356,19 +356,26 @@ if isDev then
 	end
 	
 	getgenv().findfunctions = function(script, constant)
+		if not constant then return {} end
 		local funcs = {}
 		if not script then
 			for k,v in pairs(getgc()) do
 				if type(v) == "function" then
 					local sc = getfenv(v).script
-					if sc and sc.Parent then
+					if sc then
 						local funcInfo = getinfo(v)
 						if funcInfo.short_src ~= "" then
 							pcall(function()
-								local constants = getconstants(v)
-								if table.find(constants, constant) then
+								if table.find(getconstants(v), constant) then
 									table.insert(funcs, v)
 								end
+								--[[
+								for _,const in pairs(getconstants(v)) do
+									if const == constant or tostring(const):lower():find(tostring(constant):lower()) then
+										table.insert(funcs, v)
+										break
+									end
+								end]]
 							end)
 						end
 					end
@@ -516,7 +523,7 @@ function _G.TouchObjects(objectA, objectB)
 	return true
 end
 
-function _G.ScriptSearch_CopyResults(target)
+--[[function _G.ScriptSearch_CopyResults(target)
 	if _G.SCRIPTSEARCH_RESULTS and target then
 		local resultsFolder = target:FindFirstChild("ScriptSearchResults") or Instance.new("Folder", target)
 		resultsFolder.Name = "ScriptSearchResults"
@@ -594,7 +601,7 @@ function _G.ScriptSearch(text, ignoreCase, whitelist, blacklist)
 	warn("Script search finished. Found", #_G.SCRIPTSEARCH_RESULTS, "results.")
 	warn("List of found localscripts/modules is in _G.SCRIPTSEARCH_RESULTS")
 	_G.StopScriptSearch()
-end
+end]]
 
 function _G.LocalLoadAnimationTrack(animId)
 	local anim = Instance.new("Animation")
@@ -624,11 +631,14 @@ local isStalking = false
 
 local gameModule = nil
 local gameModuleConnections = {}
+
 if game.GameId == 0 then
-	repeat task.wait(0) until game.GameId ~= 0
+	repeat task.wait() until game.GameId ~= 0
 end
 
-_G.GAMEINFO = _G.SafeGetService("MarketplaceService"):GetProductInfo(game.PlaceId)
+getgenv().RunService = _G.SafeGetService("RunService")
+getgenv().UserInputService = _G.SafeGetService("UserInputService")
+getgenv().ReplicatedStorage = _G.SafeGetService("ReplicatedStorage")
 
 if repository[game.GameId] then
 	gameModule = loadCoreModule(BaseUrl .. "Games/" .. repository[game.GameId], repository[game.GameId])
@@ -643,6 +653,8 @@ if repository[game.GameId] then
 		end
 	end
 end
+
+_G.GAMEINFO = _G.SafeGetService("MarketplaceService"):GetProductInfo(game.PlaceId)
 
 if not plr then
 	repeat
@@ -666,11 +678,11 @@ if not _G.MethodEmulatorLoaded then
 	_G.MethodEmulatorLoaded = true -- uncomment for release, comment for debugging
 end
 
-_G.MethodEmulator:SetMethodOverride(plr, "Kick", function(self, hook, message)
+_G.MethodEmulator:SetMethodOverride(plr, "Kick", function(self, hook, ...)
 	warn("Intercepted kick attempt.")
-	print("Kick message:", message)
+	print("Kick message:", _G.Discover({...}))
 	if NUKE_KICKATTEMPTS then
-		return task.wait(10e1)
+		return wait(10e1)
 	end
 end)
 
@@ -698,13 +710,10 @@ if not espModule then warn("Could not load esp module") return end
 local flightModule = loadCoreModule(BaseUrl .. "FlightModule.lua", "Flight Module")
 if not flightModule then warn("Could not load flight module") return end
 
-local UserInputService = _G.SafeGetService("UserInputService")
-
 _G.SenHub = mg.New("MeltinHub v" .. tostring(Version) .. (isDev and " [DEV]" or ""))
 if gethgui then
 	_G.SenHub.Parent = gethgui()
 else
-    --_G.SenHub.Parent = cloneref(_G.SafeGetService("CoreGui"))
 	_G.SenHub.Parent = _G.SafeGetService("CoreGui")
 end
 
@@ -947,7 +956,6 @@ do -- 								CHARACTER CATEGORY
 end
 
 do -- 								ENVIRONMENT CATEGORY
-	local RunService = _G.SafeGetService("RunService")
 	local environmentCategory = _G.SenHub:AddCategory("Environment")
 	
 	environmentCategory:AddCheckbox("Humanoids ESP", function(checked)
@@ -1212,7 +1220,7 @@ end
 
 _G.SenHub.OnDestroy = function()
 	print("MeltinHub shutting down")
-	_G.StopScriptSearch()
+	--_G.StopScriptSearch()
 	
 	isStalking = false
 	for k,v in pairs(connections) do

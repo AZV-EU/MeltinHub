@@ -4,24 +4,32 @@ local module = {
 
 function module.PreInit()
 	if not _G.SecurityBypass then
+		--[[
 		_G.SecurityBypass = nil
 		_G.SecurityBypass = hookmetamethod(game, "__namecall", function(self, ...)
 			if not checkcaller() and self then
-				if (self.Name == "" or self.Name == "RemoteEvent") and self.Parent.Name == "Security" and self.ClassName == "RemoteEvent" then
+				if (self.Name == "" or self.Name == "RemoteEvent") and self.ClassName == "RemoteEvent" and self.Parent.Name == "Security" then
+					warn("intercepted security call")
 					return wait(9e9)
 				end
 			end
 			return _G.SecurityBypass(self, ...)
 		end)
+		]]
+		local sec = ReplicatedStorage:FindFirstChild("Security")
+		if sec then
+			sec.RemoteEvent:Destroy()
+			sec[""]:Destroy()
+			sec:Destroy()
+		end
+		print("Security bypass successful")
 	end
-	print("Security bypass successful")
 end
 
 local indicator
 function module.Init(category, connections)
 	local plr = game.Players.LocalPlayer
-	local RunService = _G.SafeGetService("RunService")
-	local ReplicatedStorage = _G.SafeGetService("ReplicatedStorage")
+	plr:WaitForChild("PlayerScripts"):WaitForChild("Client"):WaitForChild("DeviceChecker"):Destroy()
 	local balls = game.Workspace:WaitForChild("Balls")
 	local aliveFolder = game.Workspace:WaitForChild("Alive")
 	
@@ -39,6 +47,7 @@ function module.Init(category, connections)
 					for idx,constant in pairs(debug.getconstants(v)) do
 						if constant == "GameAnalyticsError" then
 							debug.setconstant(v,idx,"")
+							print("GameAnalyticsError override at idx", idx)
 							break
 						end
 					end
@@ -48,75 +57,54 @@ function module.Init(category, connections)
 		end
 	end
 	
-	local function GetBalls()
-		local real, visual
+	local function GetRealBall()
 		for k,v in pairs(balls:GetChildren()) do
 			if v:GetAttribute("realBall") then
-				real = v
-			else
-				visual = v
+				return v
 			end
 		end
-		return real, visual
 	end
 	
-	indicator = Drawing.new("Line")
-	indicator.Transparency = 1
-	indicator.Color = _G.COLOR3DEF.RED
-	indicator.Visible = false
-	
-	
-	local function Parry(ball)
-		local old = _G.TeleportPlayerTo(ball.Position + Vector3.new(10, 0, 10))
-		swordsController:Parry()
-		task.wait()
-		_G.TeleportPlayerTo(old)
-	end
+	indicator = Instance.new("Part")
+	indicator.Name = "indic"
+	indicator.Transparency = 0.8
+	indicator.Size = Vector3.new(10, 10, 2)
+	indicator.Anchored = true
+	indicator.CanCollide = false
 	
 	do
 		local dataPing = game.Stats.Network.ServerStatsItem["Data Ping"]
+		local deflectConn
 		local autoDeflect = category:AddCheckbox("Auto-deflect", function(state)
 			if state then
-				local ball, visual, dist, target, predict
-				local icol = 0
-				local posFrom, posTo, inBoundsFrom, inBoundsTo
-				game:GetService("RunService"):BindToRenderStep("autodeflect",
-					Enum.RenderPriority.Camera.Value - 5, function(dt)
-					ball, visual = GetBalls()
-					if ball and visual then
-						target = game.Players:FindFirstChild(ball:GetAttribute("target"))
-						if target and target.Character then
-							posFrom, inBoundsFrom = game.Workspace.CurrentCamera:WorldToScreenPoint(visual.Position)
-							posTo, inBoundsTo = game.Workspace.CurrentCamera:WorldToScreenPoint(target.Character:GetPivot().Position)
+				local ball, dist, root, rootVel, ballVel, rootPos, ballPos, predict, ping
+				deflectConn = RunService.Stepped:Connect(function(_, dt)
+					for _,ball in pairs(balls:GetChildren()) do
+						if ball:GetAttribute("realBall") and not ball.Anchored and ball:GetAttribute("target") == plr.Name then
+							ping = dataPing:GetValue() * 0.001
 							
-							indicator.From = Vector2.new(posFrom.X, posFrom.Y + 36)
-							indicator.To = Vector2.new(posTo.X, posTo.Y + 36)
-							indicator.Visible = inBoundsFrom and inBoundsTo
+							root = plr.Character.HumanoidRootPart
 							
-							dist = target:DistanceFromCharacter(ball.Position)
+							rootVel = root.AssemblyLinearVelocity
+							ballVel = ball.AssemblyLinearVelocity
 							
-							icol = math.min(1, math.max(0, (dist-20)/100))
+							rootPos = root.Position + rootVel
+							ballPos = ball.Position + ballVel
 							
-							indicator.Color = Color3.new(1-icol, icol, 0)
+							dist = (ballPos - rootPos).Magnitude
 							
-							predict = ball.AssemblyLinearVelocity.Magnitude
-							predict = dist / (predict - predict * (dataPing:GetValue() * 0.001))
-							if target == plr then
-								if predict < .5 or predict > 9e9 and dist < 10 then
-									--_G.TeleportPlayerTo(ball.CFrame.Position + Vector3.new(math.random(2,5),0,math.random(2,5)))
-									swordsController:Parry()
-								end
+							predict = dist - dist * ping
+							if ballVel.Magnitude >= predict then
+								swordsController:Parry()
 							end
-						else
-							indicator.Visible = false
+							break
 						end
-					else
-						indicator.Visible = false
 					end
 				end)
-			else
-				pcall(function() game:GetService("RunService"):UnbindFromRenderStep("autodeflect") end)
-				indicator.Visible = false
+				table.insert(connections, deflectConn)
+			elseif deflectConn then
+				deflectConn:Disconnect()
+				deflectConn = nil
 			end
 		end)
 		autoDeflect:SetChecked(true)
@@ -125,10 +113,8 @@ end
 
 function module.Shutdown()
 	if indicator then
-		indicator.Visible = false
-		indicator:Remove()
+		indicator:Destroy()
 	end
-	pcall(function() game:GetService("RunService"):UnbindFromRenderStep("autodeflect") end)
 end
 
 return module
