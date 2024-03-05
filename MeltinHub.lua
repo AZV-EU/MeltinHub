@@ -1,4 +1,4 @@
-local Version = "1.9.6e"
+local Version = "1.9.7"
 _G.MeltinENV = 0
 -- ENVIRONMENT: 0 = public, 1 = dev (local)
 
@@ -95,7 +95,8 @@ local repository = {
 	[1001911915] = "FarmingAndFriends.lua",
 	[4986566693] = "AnimeChampions.lua",
 	[1802741133] = "CabinCrewSimulator.lua",
-	[5274658895] = "Minecraft.lua"
+	[5274658895] = "Minecraft.lua",
+	[4777817887] = "BladeBall.lua"
 }
 
 --setclipboard(tostring(game.GameId))
@@ -111,7 +112,8 @@ _G.AIMBOT_DebugMode = false
 
 _G.ESPModule_DontParent = {
 	[3647333358] = true,
-	[4523856444] = true
+	[4523856444] = true,
+	[4777817887] = true
 }
 
 _G.COLOR3DEF = {
@@ -950,7 +952,7 @@ do -- 								ENVIRONMENT CATEGORY
 	
 	environmentCategory:AddCheckbox("Humanoids ESP", function(checked)
 		espModule.SetEnabled(checked)
-	end)
+	end).Enabled = not blacklistOptions["ESP"]
 	
 	environmentCategory:AddButton("Fake-Freeze", function()
 		if plr.Character then
