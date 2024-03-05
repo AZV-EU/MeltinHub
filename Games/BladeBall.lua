@@ -89,33 +89,31 @@ function module.Init(category, connections)
 		local autoDeflect
 		autoDeflect = category:AddCheckbox("Auto-deflect", function(state)
 			if state then
-				local lastParry = tick()
 				local ball, root, rootVel, ballVel, rootPos, ballPos, dist, predict
 				task.spawn(function()
 					while autoDeflect.Checked and module.On and task.wait() do
-						if not swordsController._isParrying and not swordsController._parryCooldown and tick() - lastParry >= .05 then
-							for _,ball in pairs(balls:GetChildren()) do
-								if ball:GetAttribute("realBall") and not ball.Anchored and ball:GetAttribute("target") == plr.Name then
-									ping = dataPing:GetValue() * 0.001
-									
-									root = plr.Character.HumanoidRootPart
-									
-									rootVel = root.AssemblyLinearVelocity * ping
-									ballVel = ball.AssemblyLinearVelocity * ping
-									
-									rootPos = root.Position + rootVel
-									ballPos = ball.Position + ballVel
-									
-									dist = (ballPos - rootPos).Magnitude
-									
-									predict = (ball.AssemblyLinearVelocity * .5):Dot((rootPos - ballPos).Unit)
-									--autoDeflectLabel:SetText(string.format("%.1f", predict))
-									if dist <= 15 or predict >= dist then
+						for _,ball in pairs(balls:GetChildren()) do
+							if ball:GetAttribute("realBall") and not ball.Anchored and ball:GetAttribute("target") == plr.Name then
+								ping = dataPing:GetValue() * 0.001
+								
+								root = plr.Character.HumanoidRootPart
+								
+								rootVel = root.AssemblyLinearVelocity * ping
+								ballVel = ball.AssemblyLinearVelocity * ping
+								
+								rootPos = root.Position + rootVel
+								ballPos = ball.Position + ballVel
+								
+								dist = (ballPos - rootPos).Magnitude
+								
+								predict = (ball.AssemblyLinearVelocity * .5):Dot((rootPos - ballPos).Unit)
+								--autoDeflectLabel:SetText(string.format("%.1f", predict))
+								if dist <= 15 or predict >= dist then
+									if not swordsController._isParrying and not swordsController._parryCooldown then
 										swordsController:Parry()
-										lastParry = tick()
 									end
-									break
 								end
+								break
 							end
 						end
 					end
