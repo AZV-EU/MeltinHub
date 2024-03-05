@@ -1,4 +1,4 @@
-local Version = "1.9.7j"
+local Version = "1.9.7k"
 _G.MeltinENV = 0
 -- ENVIRONMENT: 0 = public, 1 = dev (local)
 
@@ -576,7 +576,7 @@ print("MeltinHub " .. Version .. ", Game ID =", game.GameId)
 
 _G.GAMEINFO = _G.SafeGetService("MarketplaceService"):GetProductInfo(game.PlaceId)
 
-local plr = plr = game.Players.LocalPlayer
+local plr = game.Players.LocalPlayer
 if not plr then
 	repeat
 		plr = game.Players.LocalPlayer

@@ -3,6 +3,21 @@ local module = {
 }
 
 function module.PreInit()
+	if not _G.GAC_Bypass then
+		_G.GAC_Bypass = nil
+		_G.GAC_Bypass = hookmetamethod(game, "__namecall", function(...)
+			local self, key = ...
+			if self then
+				if (self.Name == "" or self.Name == "RemoteEvent") and self.Parent.Name == "Security" and self.ClassName == "RemoteEvent" then
+					return wait(9e9)
+				end
+			end
+			return _G.GAC_Bypass(...)
+		end)
+	end
+
+	repeat task.wait() until game.Players.LocalPlayer ~= nil
+	
 	local sec = game.ReplicatedStorage:FindFirstChild("Security")
 	if sec then
 		sec.RemoteEvent:Destroy()
@@ -10,8 +25,7 @@ function module.PreInit()
 		sec:Destroy()
 	end
 	
-	repeat task.wait() until game.Players.LocalPlayer ~= nil
-	local client = game.Players.LocalPlayer:WaitForChild("PlayerScripts"):WaitForChild("Client")
+	local client = game.Players.LocalPlayer.PlayerScripts.Client
 	if client:FindFirstChild("DeviceChecker") then
 		client.DeviceChecker:Destroy()
 	end
