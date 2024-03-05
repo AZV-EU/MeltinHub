@@ -4,7 +4,6 @@ local module = {
 
 function module.PreInit()
 	if not _G.SecurityBypass then
-		--[[
 		_G.SecurityBypass = nil
 		_G.SecurityBypass = hookmetamethod(game, "__namecall", function(self, ...)
 			if not checkcaller() and self then
@@ -15,13 +14,6 @@ function module.PreInit()
 			end
 			return _G.SecurityBypass(self, ...)
 		end)
-		]]
-		local sec = ReplicatedStorage:FindFirstChild("Security")
-		if sec then
-			sec.RemoteEvent:Destroy()
-			sec[""]:Destroy()
-			sec:Destroy()
-		end
 		print("Security bypass successful")
 	end
 end
@@ -31,6 +23,13 @@ function module.Init(category, connections)
 	local plr = game.Players.LocalPlayer
 	
 	do
+		local sec = ReplicatedStorage:FindFirstChild("Security")
+		if sec then
+			sec.RemoteEvent:Destroy()
+			sec[""]:Destroy()
+			sec:Destroy()
+		end
+		
 		local client = plr:WaitForChild("PlayerScripts"):WaitForChild("Client")
 		if client:FindFirstChild("DeviceChecker") then
 			client.DeviceChecker:Destroy()

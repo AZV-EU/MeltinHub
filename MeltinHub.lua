@@ -1,4 +1,4 @@
-local Version = "1.9.7h"
+local Version = "1.9.7i"
 _G.MeltinENV = 0
 -- ENVIRONMENT: 0 = public, 1 = dev (local)
 
@@ -50,7 +50,7 @@ print("MeltinHub " .. Version .. ", Game ID =", game.GameId)
 
 local plr = _G.SafeGetService("Players").LocalPlayer
 
-_G.NUKE_KICKATTEMPTS = true
+_G.NUKE_KICKATTEMPTS = false
 
 local repository = {
 	[1903935756] = "Lucky-Block-Tycoon.lua",
