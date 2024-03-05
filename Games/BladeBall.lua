@@ -3,38 +3,23 @@ local module = {
 }
 
 function module.PreInit()
-	if not _G.SecurityBypass then
-		_G.SecurityBypass = nil
-		_G.SecurityBypass = hookmetamethod(game, "__namecall", function(self, ...)
-			if not checkcaller() and self then
-				if (self.Name == "" or self.Name == "RemoteEvent") and self.ClassName == "RemoteEvent" and self.Parent.Name == "Security" then
-					warn("intercepted security call")
-					return wait(9e9)
-				end
-			end
-			return _G.SecurityBypass(self, ...)
-		end)
-		print("Security bypass successful")
+	local sec = game.ReplicatedStorage:FindFirstChild("Security")
+	if sec then
+		sec.RemoteEvent:Destroy()
+		sec[""]:Destroy()
+		sec:Destroy()
+	end
+	
+	repeat task.wait() until game.Players.LocalPlayer ~= nil
+	local client = game.Players.LocalPlayer:WaitForChild("PlayerScripts"):WaitForChild("Client")
+	if client:FindFirstChild("DeviceChecker") then
+		client.DeviceChecker:Destroy()
 	end
 end
 
 local indicator
 function module.Init(category, connections)
 	local plr = game.Players.LocalPlayer
-	
-	do
-		local sec = ReplicatedStorage:FindFirstChild("Security")
-		if sec then
-			sec.RemoteEvent:Destroy()
-			sec[""]:Destroy()
-			sec:Destroy()
-		end
-		
-		local client = plr:WaitForChild("PlayerScripts"):WaitForChild("Client")
-		if client:FindFirstChild("DeviceChecker") then
-			client.DeviceChecker:Destroy()
-		end
-	end
 	
 	local balls = game.Workspace:WaitForChild("Balls")
 	local aliveFolder = game.Workspace:WaitForChild("Alive")

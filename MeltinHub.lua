@@ -1,4 +1,4 @@
-local Version = "1.9.7i"
+local Version = "1.9.7j"
 _G.MeltinENV = 0
 -- ENVIRONMENT: 0 = public, 1 = dev (local)
 
@@ -27,28 +27,6 @@ end
 function _G.SafeGetService(service)
     return cloneref(game:GetService(service))
 end
-
-do -- prevent loggers
-	local loggersDisabled = 0
-	local f, err = pcall(function()
-		for k,v in ipairs(getconnections(_G.SafeGetService("LogService").MessageOut)) do
-			if getinfo(v.Function).short_src ~= "" then
-				v:Disable()
-				loggersDisabled += 1
-			end
-		end
-	end)
-	if not f then
-		print("alog fail")
-		return -- can return if this is critical
-	else
-		print("Disabled", loggersDisabled, "loggers.")
-	end
-end
-
-print("MeltinHub " .. Version .. ", Game ID =", game.GameId)
-
-local plr = _G.SafeGetService("Players").LocalPlayer
 
 _G.NUKE_KICKATTEMPTS = false
 
@@ -467,62 +445,6 @@ function _G.SearchForValue(obj, className, value)
 	end
 end
 
-function _G.TeleportPlayerTo(pos, facing)
-	if not pos then return end
-	if not plr or not plr.Character then return end
-	--[[
-	if game.Workspace.StreamingEnabled then
-		local TargetPos = typeof(pos) == "CFrame" and pos.Position or pos
-		plr:RequestStreamAroundAsync(TargetPos, 1)
-	end
-	]]
-	local originalPos = plr.Character:GetPivot()
-	if typeof(pos) == "CFrame" then
-		plr.Character:PivotTo(pos)
-	elseif typeof(pos) == "Vector3" then
-		plr.Character:PivotTo(facing and CFrame.new(pos, facing) or CFrame.new(pos) * plr.Character:GetPivot().Rotation)
-	end
-	return originalPos
-end
-
-function _G.AimCameraAt(pos)
-	if not pos then return end
-	if not game.Workspace.CurrentCamera then return end
-	local camera = game.Workspace.CurrentCamera
-	local old = camera.CameraType
-	camera.CameraType = Enum.CameraType.Scriptable
-	camera.CFrame = CFrame.lookAt(game.Workspace.CurrentCamera.CFrame.Position, pos)
-	camera.CameraType = old
-end
-
-function _G.SetCharAnchored(anchored)
-	if not plr or not plr.Character then return end
-	local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
-	if not human or not human.RootPart then return end
-	human.RootPart.Anchored = anchored
-end
-
-function _G.TouchObject(object)
-	if not object then return end
-	--if not object or not object:FindFirstChildWhichIsA("TouchTransmitter") then return end
-	if plr.Character then
-		local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
-		if human and human.RootPart then
-			firetouchinterest(human.RootPart, object, 0)
-			firetouchinterest(human.RootPart, object, 1)
-			return true
-		end
-	end
-end
-
-function _G.TouchObjects(objectA, objectB)
-	if not objectA or not objectB then return end
-	--if not objectB:FindFirstChildWhichIsA("TouchTransmitter") then return end
-	firetouchinterest(objectA, objectB, 0)
-	firetouchinterest(objectA, objectB, 1)
-	return true
-end
-
 --[[function _G.ScriptSearch_CopyResults(target)
 	if _G.SCRIPTSEARCH_RESULTS and target then
 		local resultsFolder = target:FindFirstChild("ScriptSearchResults") or Instance.new("Folder", target)
@@ -603,20 +525,6 @@ function _G.ScriptSearch(text, ignoreCase, whitelist, blacklist)
 	_G.StopScriptSearch()
 end]]
 
-function _G.LocalLoadAnimationTrack(animId)
-	local anim = Instance.new("Animation")
-	anim.AnimationId = animId
-	if plr.Character then
-		local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
-		if human then
-			local animator = human:FindFirstChildWhichIsA("Animator")
-			if animator then
-				return animator:LoadAnimation(anim)
-			end
-		end
-	end
-end
-
 function loadCoreModule(address, moduleName)
 	local f, err = loadstring(game:HttpGet(address, true), "="..(moduleName or "Unknown module"))
 	if not f then
@@ -636,31 +544,114 @@ if game.GameId == 0 then
 	repeat task.wait() until game.GameId ~= 0
 end
 
-getgenv().RunService = _G.SafeGetService("RunService")
-getgenv().UserInputService = _G.SafeGetService("UserInputService")
-getgenv().ReplicatedStorage = _G.SafeGetService("ReplicatedStorage")
-
 if repository[game.GameId] then
 	gameModule = loadCoreModule(BaseUrl .. "Games/" .. repository[game.GameId], repository[game.GameId])
 	if gameModule and gameModule.PreInit then
 		local result, err = pcall(gameModule.PreInit)
 		if not result then
-			warn(_G.Discover(gameModule))
-			warn("Failed Pre-Init: " .. tostring(err))
-			error(err)
-		else
-			print("Pre-Init done")
+			error("Failed Pre-Init:", err)
 		end
 	end
 end
 
+do -- prevent loggers
+	local loggersDisabled = 0
+	local f, err = pcall(function()
+		for k,v in ipairs(getconnections(_G.SafeGetService("LogService").MessageOut)) do
+			if getinfo(v.Function).short_src ~= "" then
+				v:Disable()
+				loggersDisabled += 1
+			end
+		end
+	end)
+	if not f then
+		print("alog fail:", err)
+		return -- can return if this is critical
+	else
+		print("Disabled", loggersDisabled, "loggers.")
+	end
+end
+
+print("MeltinHub " .. Version .. ", Game ID =", game.GameId)
+
 _G.GAMEINFO = _G.SafeGetService("MarketplaceService"):GetProductInfo(game.PlaceId)
 
+local plr = plr = game.Players.LocalPlayer
 if not plr then
 	repeat
-		task.wait()
 		plr = game.Players.LocalPlayer
+		task.wait()
 	until plr ~= nil
+end
+
+function _G.TeleportPlayerTo(pos, facing)
+	if not pos then return end
+	if not plr or not plr.Character then return end
+	--[[
+	if game.Workspace.StreamingEnabled then
+		local TargetPos = typeof(pos) == "CFrame" and pos.Position or pos
+		plr:RequestStreamAroundAsync(TargetPos, 1)
+	end
+	]]
+	local originalPos = plr.Character:GetPivot()
+	if typeof(pos) == "CFrame" then
+		plr.Character:PivotTo(pos)
+	elseif typeof(pos) == "Vector3" then
+		plr.Character:PivotTo(facing and CFrame.new(pos, facing) or CFrame.new(pos) * plr.Character:GetPivot().Rotation)
+	end
+	return originalPos
+end
+
+function _G.AimCameraAt(pos)
+	if not pos then return end
+	if not game.Workspace.CurrentCamera then return end
+	local camera = game.Workspace.CurrentCamera
+	local old = camera.CameraType
+	camera.CameraType = Enum.CameraType.Scriptable
+	camera.CFrame = CFrame.lookAt(game.Workspace.CurrentCamera.CFrame.Position, pos)
+	camera.CameraType = old
+end
+
+function _G.SetCharAnchored(anchored)
+	if not plr or not plr.Character then return end
+	local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
+	if not human or not human.RootPart then return end
+	human.RootPart.Anchored = anchored
+end
+
+function _G.TouchObject(object)
+	if not object then return end
+	--if not object or not object:FindFirstChildWhichIsA("TouchTransmitter") then return end
+	if plr.Character then
+		local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
+		if human and human.RootPart then
+			firetouchinterest(human.RootPart, object, 0)
+			firetouchinterest(human.RootPart, object, 1)
+			return true
+		end
+	end
+end
+
+function _G.TouchObjects(objectA, objectB)
+	if not objectA or not objectB then return end
+	--if not objectB:FindFirstChildWhichIsA("TouchTransmitter") then return end
+	firetouchinterest(objectA, objectB, 0)
+	firetouchinterest(objectA, objectB, 1)
+	return true
+end
+
+function _G.LocalLoadAnimationTrack(animId)
+	local anim = Instance.new("Animation")
+	anim.AnimationId = animId
+	if plr.Character then
+		local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
+		if human then
+			local animator = human:FindFirstChildWhichIsA("Animator")
+			if animator then
+				return animator:LoadAnimation(anim)
+			end
+		end
+	end
 end
 
 local mg = loadCoreModule(BaseUrl .. "MeltinGui.lua", "MeltinGui")
@@ -678,9 +669,9 @@ if not _G.MethodEmulatorLoaded then
 	_G.MethodEmulatorLoaded = true -- uncomment for release, comment for debugging
 end
 
-_G.MethodEmulator:SetMethodOverride(plr, "Kick", function(self, hook, ...)
+_G.MethodEmulator:SetMethodOverride(plr, "Kick", function(self, hook, message)
 	warn("Intercepted kick attempt.")
-	print("Kick message:", _G.Discover({...}))
+	print("Kick message:", _G.Discover(message))
 	if NUKE_KICKATTEMPTS then
 		return wait(10e1)
 	end
@@ -709,6 +700,10 @@ if not espModule then warn("Could not load esp module") return end
 
 local flightModule = loadCoreModule(BaseUrl .. "FlightModule.lua", "Flight Module")
 if not flightModule then warn("Could not load flight module") return end
+
+getgenv().RunService = _G.SafeGetService("RunService")
+getgenv().UserInputService = _G.SafeGetService("UserInputService")
+getgenv().ReplicatedStorage = _G.SafeGetService("ReplicatedStorage")
 
 _G.SenHub = mg.New("MeltinHub v" .. tostring(Version) .. (isDev and " [DEV]" or ""))
 if gethgui then
