@@ -85,41 +85,41 @@ function module.Init(category, connections)
 	
 	do
 		local dataPing = game.Stats.Network.ServerStatsItem["Data Ping"]
-		local deflectConn
 		--local autoDeflectLabel = category:AddLabel("")
-		local autoDeflect = category:AddCheckbox("Auto-deflect", function(state)
+		local autoDeflect
+		autoDeflect = category:AddCheckbox("Auto-deflect", function(state)
 			if state then
+				local lastParry = tick()
 				local ball, root, rootVel, ballVel, rootPos, ballPos, dist, predict
-				deflectConn = RunService.Stepped:Connect(function(_, dt)
-					if not swordsController._isParrying and not swordsController._parryCooldown then
-						for _,ball in pairs(balls:GetChildren()) do
-							if ball:GetAttribute("realBall") and not ball.Anchored and ball:GetAttribute("target") == plr.Name then
-								ping = dataPing:GetValue() * 0.001
-								
-								root = plr.Character.HumanoidRootPart
-								
-								rootVel = root.AssemblyLinearVelocity * ping
-								ballVel = ball.AssemblyLinearVelocity * ping
-								
-								rootPos = root.Position + rootVel
-								ballPos = ball.Position + ballVel
-								
-								dist = (ballPos - rootPos).Magnitude
-								
-								predict = (ball.AssemblyLinearVelocity * .5):Dot((rootPos - ballPos).Unit)
-								--autoDeflectLabel:SetText(string.format("%.1f", predict))
-								if dist <= 15 or predict >= dist then
-									swordsController:Parry()
+				task.spawn(function()
+					while autoDeflect.Checked and module.On and task.wait() do
+						if not swordsController._isParrying and not swordsController._parryCooldown and tick() - lastParry >= .05 then
+							for _,ball in pairs(balls:GetChildren()) do
+								if ball:GetAttribute("realBall") and not ball.Anchored and ball:GetAttribute("target") == plr.Name then
+									ping = dataPing:GetValue() * 0.001
+									
+									root = plr.Character.HumanoidRootPart
+									
+									rootVel = root.AssemblyLinearVelocity * ping
+									ballVel = ball.AssemblyLinearVelocity * ping
+									
+									rootPos = root.Position + rootVel
+									ballPos = ball.Position + ballVel
+									
+									dist = (ballPos - rootPos).Magnitude
+									
+									predict = (ball.AssemblyLinearVelocity * .5):Dot((rootPos - ballPos).Unit)
+									--autoDeflectLabel:SetText(string.format("%.1f", predict))
+									if dist <= 15 or predict >= dist then
+										swordsController:Parry()
+										lastParry = tick()
+									end
+									break
 								end
-								break
 							end
 						end
 					end
 				end)
-				table.insert(connections, deflectConn)
-			elseif deflectConn then
-				deflectConn:Disconnect()
-				deflectConn = nil
 			end
 		end)
 		autoDeflect:SetChecked(true)
