@@ -29,7 +29,14 @@ end
 local indicator
 function module.Init(category, connections)
 	local plr = game.Players.LocalPlayer
-	plr:WaitForChild("PlayerScripts"):WaitForChild("Client"):WaitForChild("DeviceChecker"):Destroy()
+	
+	do
+		local client = plr:WaitForChild("PlayerScripts"):WaitForChild("Client")
+		if client:FindFirstChild("DeviceChecker") then
+			client.DeviceChecker:Destroy()
+		end
+	end
+	
 	local balls = game.Workspace:WaitForChild("Balls")
 	local aliveFolder = game.Workspace:WaitForChild("Alive")
 	
@@ -57,47 +64,55 @@ function module.Init(category, connections)
 		end
 	end
 	
-	local function GetRealBall()
+	local function GetBalls()
+		local real, visual
 		for k,v in pairs(balls:GetChildren()) do
 			if v:GetAttribute("realBall") then
-				return v
+				real = v
+			else
+				visual = v
 			end
 		end
+		return real, visual
 	end
 	
 	indicator = Instance.new("Part")
 	indicator.Name = "indic"
 	indicator.Transparency = 0.8
-	indicator.Size = Vector3.new(10, 10, 2)
+	indicator.Size = Vector3.new(5, 5, 5)
 	indicator.Anchored = true
 	indicator.CanCollide = false
 	
 	do
 		local dataPing = game.Stats.Network.ServerStatsItem["Data Ping"]
 		local deflectConn
+		--local autoDeflectLabel = category:AddLabel("")
 		local autoDeflect = category:AddCheckbox("Auto-deflect", function(state)
 			if state then
-				local ball, dist, root, rootVel, ballVel, rootPos, ballPos, predict, ping
+				local ball, root, rootVel, ballVel, rootPos, ballPos, dist, predict
 				deflectConn = RunService.Stepped:Connect(function(_, dt)
-					for _,ball in pairs(balls:GetChildren()) do
-						if ball:GetAttribute("realBall") and not ball.Anchored and ball:GetAttribute("target") == plr.Name then
-							ping = dataPing:GetValue() * 0.001
-							
-							root = plr.Character.HumanoidRootPart
-							
-							rootVel = root.AssemblyLinearVelocity
-							ballVel = ball.AssemblyLinearVelocity
-							
-							rootPos = root.Position + rootVel
-							ballPos = ball.Position + ballVel
-							
-							dist = (ballPos - rootPos).Magnitude
-							
-							predict = dist - dist * ping
-							if ballVel.Magnitude >= predict then
-								swordsController:Parry()
+					if not swordsController._isParrying and not swordsController._parryCooldown then
+						for _,ball in pairs(balls:GetChildren()) do
+							if ball:GetAttribute("realBall") and not ball.Anchored and ball:GetAttribute("target") == plr.Name then
+								ping = dataPing:GetValue() * 0.001
+								
+								root = plr.Character.HumanoidRootPart
+								
+								rootVel = root.AssemblyLinearVelocity * ping
+								ballVel = ball.AssemblyLinearVelocity * ping
+								
+								rootPos = root.Position + rootVel
+								ballPos = ball.Position + ballVel
+								
+								dist = (ballPos - rootPos).Magnitude
+								
+								predict = (ball.AssemblyLinearVelocity * .5):Dot((rootPos - ballPos).Unit)
+								--autoDeflectLabel:SetText(string.format("%.1f", predict))
+								if dist <= 15 or predict >= dist then
+									swordsController:Parry()
+								end
+								break
 							end
-							break
 						end
 					end
 				end)

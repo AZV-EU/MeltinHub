@@ -1,4 +1,4 @@
-local Version = "1.9.7c"
+local Version = "1.9.7e"
 _G.MeltinENV = 1
 -- ENVIRONMENT: 0 = public, 1 = dev (local)
 
@@ -99,7 +99,7 @@ local repository = {
 	[4777817887] = "BladeBall.lua"
 }
 
---setclipboard(tostring(game.GameId))
+-- setclipboard(tostring(game.GameId))
 
 local blacklisted = {
 	[2142948266] = {
