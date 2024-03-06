@@ -59,7 +59,7 @@ _G.ESPModule_Database = {
 
 do
 	local function getTeamIndex(team)
-		local teams = game:GetService("Teams"):GetTeams()
+		local teams = _G.SafeGetService("Teams"):GetTeams()
 		for k,v in pairs(teams) do
 			if v == team then
 				return k

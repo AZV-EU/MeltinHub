@@ -1,9 +1,30 @@
 if _G.AntiCheats_Enabled then return end
-_G.AntiCheats_Enabled = true
+
+-- BAC (bladeball anticheat) bypass
+for k,v in pairs(getnilinstances()) do
+	if v:IsA("LocalScript") then
+		for _,func in pairs(getgc()) do
+			if type(func) == "function" then
+				local sc = getfenv(func).script
+				if sc and sc == v then
+					for idx,const in pairs(getconstants(func)) do
+						if const == "Kick" or const == "FireServer" then
+							setconstant(func, idx, "")
+						end
+					end
+					for idx,uv in pairs(getupvalues(func)) do
+						if typeof(uv) == "Instance" and (uv.ClassName == "RemoteEvent" or uv.ClassName == "Humanoid") then
+							setupvalue(func, idx, nil)
+						end
+					end
+				end
+			end
+		end
+	end
+end
 
 local orig_hook1
 orig_hook1 = hookfunction(getrenv().require, newcclosure(function(self, ...)
-
 	if not checkcaller() then
 		local args = {...}
 		local calling_script = getcallingscript()
@@ -45,26 +66,30 @@ orig_hook2 = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
 	return orig_hook2(self, ...)
 end))
 
--- Adonis bypass by IceMinisterq, cleaned and added here for convenience
--- src: https://github.com/IceMinisterq/Misc-Script/blob/main/adonis%20ac%20bypass.lua
-repeat task.wait() until game:IsLoaded()
+task.spawn(function()
+	-- Adonis bypass by IceMinisterq, cleaned and added here for convenience
+	-- src: https://github.com/IceMinisterq/Misc-Script/blob/main/adonis%20ac%20bypass.lua
+	repeat task.wait() until game:IsLoaded()
 
-local function isAdonisAC(tbl) return rawget(tbl, "Detected") and typeof(rawget(tbl, "Detected")) == "function" and rawget(tbl, "RLocked") end
+	local function isAdonisAC(tbl) return rawget(tbl, "Detected") and typeof(rawget(tbl, "Detected")) == "function" and rawget(tbl, "RLocked") end
 
-for _,tbl in next, getgc(true) do
-	if typeof(tbl) == "table" and isAdonisAC(tbl) then
-		for k,v in next, tbl do
-			if rawequal(k, "Detected") then
-				local old
-				old = hookfunction(v, function(action, info, nocrash)
-					if rawequal(action, "_") and rawequal(info, "_") and rawequal(nocrash, true) then
-						return old(action, info, nocrash)
-					end
-					return task.wait(9e9)
-				end)
-				warn("Adonis anti-cheat bypass setup successful.")
-				break
+	for _,tbl in next, getgc(true) do
+		if typeof(tbl) == "table" and isAdonisAC(tbl) then
+			for k,v in next, tbl do
+				if rawequal(k, "Detected") then
+					local old
+					old = hookfunction(v, function(action, info, nocrash)
+						if rawequal(action, "_") and rawequal(info, "_") and rawequal(nocrash, true) then
+							return old(action, info, nocrash)
+						end
+						return task.wait(10e1)
+					end)
+					warn("Adonis anti-cheat bypass setup successful.")
+					break
+				end
 			end
 		end
 	end
-end
+end)
+
+_G.AntiCheats_Enabled = true

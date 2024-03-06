@@ -1,4 +1,4 @@
-local Version = "1.9.7k"
+local Version = "1.9.7o"
 _G.MeltinENV = 1
 -- ENVIRONMENT: 0 = public, 1 = dev (local)
 
@@ -19,6 +19,8 @@ local isDev = _G.MeltinENV == 1
 local GithubUrl = "https://raw.githubusercontent.com/Senzaa/MeltinHub/main/"
 local DevUrl = "http://azv.ddns.net/MeltinHub/"
 local BaseUrl = isDev and DevUrl or GithubUrl
+
+loadstring(game:HttpGet(BaseUrl .. "AnticheatBypass.lua", true))()
 
 if not cloneref then
 	loadstring(game:HttpGet("https://raw.githubusercontent.com/Babyhamsta/RBLX_Scripts/main/Universal/CloneRef.lua", true))()
@@ -287,29 +289,6 @@ if isDev then
 			return env
 		end
 	end
-	getgenv().getfunctions = function(script)
-		local funcs = {}
-		for k,v in pairs(getgc(true)) do
-			if type(v) == "function" and getfenv(v).script == script then
-				local funcInfo = getinfo(v)
-				if funcInfo.short_src ~= "" and not funcs[funcInfo.name] then
-					funcs[funcInfo.name] = v
-				end
-			end
-		end
-		local env = getsenv(script)
-		if env then
-			for k,v in pairs(env) do
-				if type(v) == "function" then
-					local funcInfo = getinfo(v)
-					if funcInfo.short_src ~= "" and not funcs[funcInfo.name] then
-						funcs[funcInfo.name] = v
-					end
-				end
-			end
-		end
-		return funcs
-	end
 	
 	if getprotos_orig then
 		getgenv().getprotos = getprotos_orig
@@ -318,12 +297,11 @@ if isDev then
 	getgenv().getprotos = function(script)
 		if not script then return {} end
 		if typeof(script) == "Instance" and (script:IsA("LocalScript") or script:IsA("ModuleScript")) then
-			local funcs = {}
+			local visited, funcs = {}, {}
 			for k,v in pairs(getgc()) do
 				if type(v) == "function" then
-					local funcInfo = getinfo(v)
-					local sc = getfenv(v).script
-					if sc == script and funcInfo.name == "" then
+					if getfenv(v).script == script and getinfo(v).name == "" and not visited[v] then
+						visited[v] = true
 						table.insert(funcs, v)
 					end
 				end
@@ -332,80 +310,105 @@ if isDev then
 		end
 		return getprotos_orig(script)
 	end
-	
-	getgenv().findfunctions = function(script, constant)
-		if not constant then return {} end
-		local funcs = {}
-		if not script then
-			for k,v in pairs(getgc()) do
-				if type(v) == "function" then
-					local sc = getfenv(v).script
-					if sc then
-						local funcInfo = getinfo(v)
-						if funcInfo.short_src ~= "" then
-							pcall(function()
-								if table.find(getconstants(v), constant) then
-									table.insert(funcs, v)
-								end
-								--[[
-								for _,const in pairs(getconstants(v)) do
-									if const == constant or tostring(const):lower():find(tostring(constant):lower()) then
-										table.insert(funcs, v)
-										break
-									end
-								end]]
-							end)
-						end
-					end
-				end
-			end
-		elseif typeof(script) == "Instance" and (script:IsA("LocalScript") or script:IsA("ModuleScript")) then
-			for k,v in pairs(getgc()) do
-				if type(v) == "function" then
-					local sc = getfenv(v).script
-					if sc == script then
-						local constants = getconstants(v)
-						if table.find(constants, constant) then
-							table.insert(funcs, v)
-						end
-					end
-				end
+end
+
+getgenv().getfunctions = function(script)
+	local visited, funcs = {}, {}
+	for k,v in pairs(getgc(true)) do
+		if type(v) == "function" and getfenv(v).script == script then
+			if getinfo(v).short_src ~= "" and not visited[v] then
+				visited[v] = true
+				table.insert(funcs, v)
 			end
 		end
-		return funcs
 	end
-	
-	getgenv().decompile = function(script, mode, timeout)
-		if typeof(script) == "Instance" then
-			if script:IsA("LocalScript") or script:IsA("ModuleScript") then
-				local funcs = {}
-				for fnName, func in pairs(getfunctions(script)) do
-					funcs[fnName] = {
-						Info = getinfo(func),
-						--Upvalues = getupvalues(func),
-						Constants = getconstants(func)
-						--Protos = getprotos(func)
-						--FunctionEnvironment = getfenv(func)
-					}
+	local env = getsenv(script)
+	if env then
+		for k,v in pairs(env) do
+			if type(v) == "function" then
+				if getinfo(v).short_src ~= "" and not visited[v] then
+					visited[v] = true
+					table.insert(funcs, v)
 				end
-				return _G.Discover(
-					{
-						ScriptEnvironment = getsenv(script),
-						Functions = funcs
-					}, 10
-				)
 			end
-		elseif type(script) == "function" then
-			return _G.Discover(
-				{
-					Info = getinfo(script),
-					Upvalues = getupvalues(script),
-					Constants = getconstants(script)
-				}, 10
-			)
-		elseif type(script) == "string" then
-			return _G.Stringify(script, true)
 		end
+	end
+	return funcs
+end
+
+getgenv().findfunctions = function(script, constant)
+	if not constant then return {} end
+	local funcs = {}
+	if not script then
+		for k,v in pairs(getgc()) do
+			if type(v) == "function" then
+				local sc = getfenv(v).script
+				if sc then
+					local funcInfo = getinfo(v)
+					if funcInfo.short_src ~= "" then
+						pcall(function()
+							if table.find(getconstants(v), constant) then
+								table.insert(funcs, v)
+							end
+							--[[
+							for _,const in pairs(getconstants(v)) do
+								if const == constant or tostring(const):lower():find(tostring(constant):lower()) then
+									table.insert(funcs, v)
+									break
+								end
+							end]]
+						end)
+					end
+				end
+			end
+		end
+	elseif typeof(script) == "Instance" and (script:IsA("LocalScript") or script:IsA("ModuleScript")) then
+		for k,v in pairs(getgc()) do
+			if type(v) == "function" then
+				local sc = getfenv(v).script
+				if sc == script then
+					local constants = getconstants(v)
+					if table.find(constants, constant) then
+						table.insert(funcs, v)
+					end
+				end
+			end
+		end
+	end
+	return funcs
+end
+
+getgenv().decompile2 = function(script, mode, timeout)
+	if typeof(script) == "Instance" then
+		if script:IsA("LocalScript") or script:IsA("ModuleScript") then
+			local funcs = {}
+			for _,func in pairs(getfunctions(script)) do
+				table.insert(funcs, decompile2(func))
+			end
+			return {
+				ScriptEnvironment = getsenv(script),
+				Functions = funcs
+			}
+		end
+	elseif type(script) == "function" then
+		local protos = {}
+		for _,proto in pairs(getprotos(script)) do
+			table.insert(protos, decompile2(proto))
+		end
+		return {
+			Info = getinfo(script),
+			Upvalues = getupvalues(script),
+			Constants = getconstants(script),
+			Protos = protos
+		}
+	elseif type(script) == "string" then
+		return _G.Stringify(script, true)
+	end
+end
+
+if not decompile then
+	getgenv().decompile = function(script, mode, timeout)
+		return _G.Discover(decompile2(script, mode, timeout))
 	end
 end
 
@@ -549,7 +552,9 @@ if repository[game.GameId] then
 	if gameModule and gameModule.PreInit then
 		local result, err = pcall(gameModule.PreInit)
 		if not result then
-			error("Failed Pre-Init:", err)
+			print("Failed Pre-Init:", err)
+		else
+			print("Pre-Init done")
 		end
 	end
 end
@@ -654,6 +659,12 @@ function _G.LocalLoadAnimationTrack(animId)
 	end
 end
 
+getgenv().RunService = _G.SafeGetService("RunService")
+getgenv().UserInputService = _G.SafeGetService("UserInputService")
+getgenv().ContextActionService = _G.SafeGetService("ContextActionService")
+getgenv().ReplicatedStorage = _G.SafeGetService("ReplicatedStorage")
+getgenv().TweenService = _G.SafeGetService("TweenService")
+
 local mg = loadCoreModule(BaseUrl .. "MeltinGui.lua", "MeltinGui")
 if not mg then warn("Could not load meltingui") return end
 
@@ -671,23 +682,24 @@ end
 
 _G.MethodEmulator:SetMethodOverride(plr, "Kick", function(self, hook, message)
 	warn("Intercepted kick attempt.")
+	print("Source:", _G.Stringify(getcallingscript()))
 	print("Kick message:", _G.Discover(message))
 	if NUKE_KICKATTEMPTS then
 		return wait(10e1)
 	end
 end)
 
+--[[
 if not _G.MouseEmulatorLoaded then
 	_G.MouseEmulator = loadCoreModule(BaseUrl .. "MouseEmulator.lua", "Mouse Emulator")
 	if not _G.MouseEmulator then warn("Could not load mouse emulator") return end
 	_G.MouseEmulatorLoaded = true -- uncomment for release, comment for debugging
 end
-
 if not _G.KeyboardEmulatorLoaded then
 	_G.KeyboardEmulator = loadCoreModule(BaseUrl .. "KeyboardEmulator.lua", "Keyboard Emulator")
 	if not _G.KeyboardEmulator then warn("Could not load keyboard emulator") return end
 	_G.KeyboardEmulatorLoaded = true
-end
+end]]
 
 --_G.Autopilot = loadCoreModule(BaseUrl .. "Autopilot.lua", "Autopilot")
 --if not _G.Autopilot then warn("Could not load autopilot") return end
@@ -700,10 +712,6 @@ if not espModule then warn("Could not load esp module") return end
 
 local flightModule = loadCoreModule(BaseUrl .. "FlightModule.lua", "Flight Module")
 if not flightModule then warn("Could not load flight module") return end
-
-getgenv().RunService = _G.SafeGetService("RunService")
-getgenv().UserInputService = _G.SafeGetService("UserInputService")
-getgenv().ReplicatedStorage = _G.SafeGetService("ReplicatedStorage")
 
 _G.SenHub = mg.New("MeltinHub v" .. tostring(Version) .. (isDev and " [DEV]" or ""))
 if gethgui then
@@ -904,7 +912,7 @@ do -- 								CHARACTER CATEGORY
 				if freezeValues.Checked and human.WalkSpeed ~= speedSlider.Value then
 					human.WalkSpeed = speedSlider.Value
 				else
-					speedSlider:SetValue(human.WalkSpeed)
+					speedSlider:SetSliderValue(human.WalkSpeed)
 				end
 			end))
 			table.insert(connections, human:GetPropertyChangedSignal("JumpPower"):Connect(function()
@@ -912,7 +920,7 @@ do -- 								CHARACTER CATEGORY
 					if freezeValues.Checked then
 						human.JumpPower.Value = jumpSlider.Value
 					else
-						speedSlider:SetValue(human.JumpPower)
+						speedSlider:SetSliderValue(human.JumpPower)
 					end
 				end
 			end))
@@ -921,7 +929,7 @@ do -- 								CHARACTER CATEGORY
 					if freezeValues.Checked then
 						human.JumpHeight.Value = jumpSlider.Value
 					else
-						speedSlider:SetValue(human.JumpHeight)
+						speedSlider:SetSliderValue(human.JumpHeight)
 					end
 				end
 			end))
@@ -1244,18 +1252,9 @@ _G.SenHub.OnDestroy = function()
 	
 	_G.IndexEmulator:Reset()
 	_G.MethodEmulator:Reset()
-	_G.KeyboardEmulator:Reset()
+	--_G.KeyboardEmulator:Reset()
 	--_G.Autopilot:Reset()
 	
 	--_G.ANTILAG = false
 	--_G.EnableConnections(_G.SafeGetService("LogService").MessageOut)
-	
-	if _G.MeltinDecompiler then
-		_G.MeltinDecompiler = nil
-		if getsenv_orig then
-			getgenv().getsenv = getgenv().getsenv_orig
-			getgenv().getsenv_orig = nil
-		end
-		getgenv().decompile = nil
-	end
 end

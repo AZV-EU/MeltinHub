@@ -7,8 +7,6 @@ local module = {
 }
 
 local Mouse = plr:GetMouse()
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
 
 function module.SetMode(mode)
 	module.Mode = mode
@@ -104,7 +102,7 @@ function module.SetEnabled(state)
 		fovLine.Visible = false
 		
 		local cam, los, fovPos, pos
-		game:GetService("RunService"):BindToRenderStep("_mh_ab",
+		RunService:BindToRenderStep("_mh_ab",
 		Enum.RenderPriority.Camera.Value - 10, function()
 			cam = game.Workspace.CurrentCamera
 			if _G.AIMBOT_CanUse() and cam and cam.CameraSubject then
@@ -137,7 +135,7 @@ function module.SetEnabled(state)
 		fovCirc:Remove()
 		fovLine:Remove()
 		_G.AIMBOT_CurrentTarget = nil
-		game:GetService("RunService"):UnbindFromRenderStep("_mh_ab")
+		RunService:UnbindFromRenderStep("_mh_ab")
 	end
 	module.Enabled = state
 end

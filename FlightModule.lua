@@ -1,6 +1,3 @@
-local UserInputService = _G.SafeGetService("UserInputService")
-local ContextActionService = _G.SafeGetService("ContextActionService")
-local RunService = _G.SafeGetService("RunService")
 local plr = game.Players.LocalPlayer
 local cam = game.Workspace.CurrentCamera
 
