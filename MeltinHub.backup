@@ -1,4 +1,4 @@
-local Version = "1.9.7o"
+local Version = "1.9.8"
 _G.MeltinENV = 1
 -- ENVIRONMENT: 0 = public, 1 = dev (local)
 
@@ -103,6 +103,30 @@ _G.COLOR3DEF = {
 	GREEN = Color3.new(0, 1, 0),
 	BLUE = Color3.new(0, 0, 1)
 }
+
+function _G.DisableConnections(signal)
+	if signal and typeof(signal) == "RBXScriptSignal" then
+		for _,conn in pairs(getconnections(signal)) do
+			conn:Disable()
+		end
+	end
+end
+
+function _G.EnableConnections(signal)
+	if signal and typeof(signal) == "RBXScriptSignal" then
+		for _,conn in pairs(getconnections(signal)) do
+			conn:Enable()
+		end
+	end
+end
+
+function _G.FireConnections(signal)
+	if signal and typeof(signal) == "RBXScriptSignal" then
+		for _,conn in pairs(getconnections(signal)) do
+			conn:Fire()
+		end
+	end
+end
 
 function _G.Notify(text, title)
 	game.StarterGui:SetCore("SendNotification", {

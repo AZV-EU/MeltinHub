@@ -10,7 +10,7 @@ function module.Init(category, connections)
 	local plr = game.Players.LocalPlayer
 	
 	do
-		local sec = game.ReplicatedStorage:FindFirstChild("Security")
+		local sec = ReplicatedStorage:FindFirstChild("Security")
 		if sec then
 			sec.RemoteEvent:Destroy()
 			sec[""]:Destroy()
@@ -28,6 +28,11 @@ function module.Init(category, connections)
 	
 	local Controllers = ReplicatedStorage:WaitForChild("Controllers")
 	local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+	
+	local Remote = {
+		RemoteEvent = ReplicatedStorage:WaitForChild("Remote"):WaitForChild("RemoteEvent"),
+		RemoteFunction = ReplicatedStorage.Remote:WaitForChild("RemoteFunction")
+	}
 	
 	local swordsController = require(Controllers:WaitForChild("SwordsController"))
 	local analyticsController = require(Controllers:WaitForChild("AnalyticsController"))
@@ -63,19 +68,32 @@ function module.Init(category, connections)
 		return real, visual
 	end
 	
-	do
+	do --faster openings
+		local openCrate = Remotes:WaitForChild("OpenCrate")
+		local spinFinished = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_net@0.1.0"):WaitForChild("net"):WaitForChild("RE/SpinFinished")
+
+		_G.DisableConnections(openCrate.OnClientEvent)
+		table.insert(connections, openCrate.OnClientEvent:Connect(function(chestType, reward, skip)
+			Remote.RemoteEvent:FireServer("OpeningCase", true)
+			spinFinished:FireServer()
+			Remote.RemoteEvent:FireServer("OpeningCase", false)
+			_G.Notify(string.format("You received '%s'!", reward), string.format("Opening %s Crate", chestType))
+		end))
+	end
+	
+	do -- auto parry
 		local dataPing = game.Stats.Network.ServerStatsItem["Data Ping"]
 		--local autoDeflectLabel = category:AddLabel("")
 		local parryResetConn
 		local autoDeflect
-		autoDeflect = category:AddCheckbox("Auto-deflect", function(state)
+		autoDeflect = category:AddCheckbox("Auto-parry", function(state)
 			if state then
+				local standoff, ball, root, rootVel, ballVel, rootPos, ballPos, dist, predict
 				local lastParried = 0
 				parryResetConn = Remotes:WaitForChild("ParrySuccess").OnClientEvent:Connect(function()
-					lastParried = tick() - .4
+					lastParried = tick() - .35
 				end)
 				table.insert(connections, parryResetConn)
-				local ball, root, rootVel, ballVel, rootPos, ballPos, dist, predict
 				while autoDeflect.Checked and module.On and task.wait() do
 					for _,ball in pairs(balls:GetChildren()) do
 						if ball:GetAttribute("realBall") and not ball.Anchored and ball:GetAttribute("target") == plr.Name then
@@ -91,9 +109,9 @@ function module.Init(category, connections)
 							
 							dist = (ballPos - rootPos).Magnitude
 							
-							predict = ((ballPos + ball.AssemblyLinearVelocity * .25) - ballPos).Magnitude
+							predict = (ball.AssemblyLinearVelocity * .35).Magnitude
 							--autoDeflectLabel:SetText(string.format("%.1f", predict))
-							if tick() - lastParried >= .5 and (dist <= 15 or predict >= (dist - 5)) then
+							if (dist <= 30 or tick() - lastParried >= .5) and (dist <= 15 or predict >= (dist - 10)) then
 								swordsController:Parry()
 								lastParried = tick()
 								task.wait()
