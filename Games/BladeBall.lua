@@ -23,6 +23,12 @@ function module.Init(category, connections)
 		end
 	end
 	
+	local isShiftlock = plr:WaitForChild("isShiftlock")
+	table.insert(connections, isShiftlock:GetPropertyChangedSignal("Value"):Connect(function()
+		isShiftlock.Value = false
+	end))
+	isShiftlock.Value = false
+	
 	local balls = game.Workspace:WaitForChild("Balls")
 	local aliveFolder = game.Workspace:WaitForChild("Alive")
 	
@@ -88,10 +94,10 @@ function module.Init(category, connections)
 		local autoDeflect
 		autoDeflect = category:AddCheckbox("Auto-parry", function(state)
 			if state then
-				local standoff, ball, root, rootVel, ballVel, rootPos, ballPos, dist, predict
+				local ball, root, rootVel, ballVel, rootPos, ballPos, dist, predict, velToPlayer
 				local lastParried = 0
 				parryResetConn = Remotes:WaitForChild("ParrySuccess").OnClientEvent:Connect(function()
-					lastParried = tick() - .35
+					lastParried = tick() - .3
 				end)
 				table.insert(connections, parryResetConn)
 				while autoDeflect.Checked and module.On and task.wait() do
@@ -109,9 +115,10 @@ function module.Init(category, connections)
 							
 							dist = (ballPos - rootPos).Magnitude
 							
-							predict = (ball.AssemblyLinearVelocity * .35).Magnitude
+							predict = (ball.AssemblyLinearVelocity * .25).Magnitude
+							velToPlayer = ball.AssemblyLinearVelocity:Dot(rootPos - ballPos)
 							--autoDeflectLabel:SetText(string.format("%.1f", predict))
-							if (dist <= 30 or tick() - lastParried >= .5) and (dist <= 15 or predict >= (dist - 10)) then
+							if (tick() - lastParried >= .5 and predict >= (dist - 10)) or (velToPlayer > 0 and dist <= 15) then
 								swordsController:Parry()
 								lastParried = tick()
 								task.wait()
