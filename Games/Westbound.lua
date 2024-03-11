@@ -70,7 +70,9 @@ function module.Init(category, connections)
 			if shotInfo.BulletOwner == plr then
 				if _G.AIMBOT_CurrentTarget then
 					shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, _G.AIMBOT_CurrentTarget.Position)
-					pcall(_G.CreateShot_ORIG, shotInfo)
+					--pcall(_G.CreateShot_ORIG, shotInfo)
+				else
+					shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, mouse.Hit.Position)
 				end
 			end
 			_G.CreateShot_ORIG(shotInfo)
