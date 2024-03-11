@@ -83,11 +83,13 @@ do
 		if not source then return end
 		for k,v in ipairs(_G.AIMBOT_GetCastParts(target)) do
 			losDir = (v.Position - source)
-			result = _G.AIMBOT_Raycast(
-				source,
-				losDir.Unit * (losDir.Magnitude * 2))
-			if not result or result.Instance == nil or result.Instance:IsDescendantOf(target) then
-				return true, result, v
+			if losDir.Magnitude <= 1000 then
+				result = _G.AIMBOT_Raycast(
+					source,
+					losDir.Unit * (losDir.Magnitude * 2))
+				if not result or result.Instance == nil or result.Instance:IsDescendantOf(target) then
+					return true, result, v
+				end
 			end
 		end
 	end

@@ -71,8 +71,8 @@ function module.Init(category, connections)
 				if _G.AIMBOT_CurrentTarget then
 					shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, _G.AIMBOT_CurrentTarget.Position)
 					--pcall(_G.CreateShot_ORIG, shotInfo)
-				else
-					shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, mouse.Hit.Position)
+				--else
+					--shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, mouse.Hit.Position)
 				end
 			end
 			_G.CreateShot_ORIG(shotInfo)
@@ -123,6 +123,7 @@ function module.Init(category, connections)
 		if tool:IsA("Tool") and not hijackedTools[tool] then
 			hijackedTools[tool] = true
 			
+			--[[
 			if tool:FindFirstChild("GunType") then
 				table.insert(connections, tool.Equipped:Connect(function()
 					_G.AimbotModule.SetEnabled(true)
@@ -130,7 +131,7 @@ function module.Init(category, connections)
 				table.insert(connections, tool.Unequipped:Connect(function()
 					_G.AimbotModule.SetEnabled(false)
 				end))
-			end
+			end]]
 			
 			local func = hijackFuncs[tool.Name]
 			if func then
