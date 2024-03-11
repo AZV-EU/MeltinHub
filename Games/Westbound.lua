@@ -10,7 +10,23 @@ function module.Init(category, connections)
 	local mouse = plr:GetMouse()
 	
 	local animals = game.Workspace:WaitForChild("Animals")
-	
+	--[[_G.AIMBOT_GetTargets = function()
+		local targets = {}
+		for _,v in pairs(game.Players:GetPlayers()) do
+			if v ~= plr and v.Character and v.Character.Parent and
+				_G.ESPModule_Database.Storages["Enemies"].Rule(v) then
+				table.insert(targets, v.Character)
+			end
+		end
+		for _,v in pairs(animals:GetChildren()) do
+			local human = v:FindFirstChildWhichIsA("Humanoid")
+			if human and human.Health > 0 then
+				table.insert(targets, v)
+			end
+		end
+		return targets
+	end]]
+
 	_G.ESPModule_Database.Storages["Enemies"].Rule = function(target)
 		if target:IsA("Player") and plr.Team and target.Team
 			and target.Team.Name ~= "Civilians" and
@@ -56,7 +72,6 @@ function module.Init(category, connections)
 					shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, _G.AIMBOT_CurrentTarget.Position)
 					pcall(_G.CreateShot_ORIG, shotInfo)
 				end
-				return
 			end
 			_G.CreateShot_ORIG(shotInfo)
 		end

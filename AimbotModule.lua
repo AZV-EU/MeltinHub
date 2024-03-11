@@ -2,8 +2,8 @@ local plr = game.Players.LocalPlayer
 
 local module = {
 	Enabled = false,
-	Mode = 1, -- [1: Obvious] [2: Silent],
-	FOV = 100 -- in pixels, from center of screen
+	Mode = 1, -- [1: Unlimited] [2: FOV-Limited],
+	FOV = 150 -- in pixels, from center of screen
 }
 
 local Mouse = plr:GetMouse()
@@ -31,7 +31,7 @@ end
 
 _G.AIMBOT_GetTargets = function()
 	local targets = {}
-	for _,player in pairs(game.Players:GetPlayers()) do
+	for _,v in pairs(game.Players:GetPlayers()) do
 		if v ~= plr and v.Character and v.Character.Parent and
 			_G.ESPModule_Database.Storages["Enemies"].Rule(v) then
 			table.insert(targets, v.Character)
@@ -45,12 +45,14 @@ local function GetValidTargets()
 	local human, head, castPoints, pos, inBounds, dist
 	local mousePos = Vector2.new(Mouse.X, Mouse.Y)
 	for k,v in pairs(_G.AIMBOT_GetTargets()) do
-		human = v:FindFirstChildWhichIsA("Humanoid")
-		if human and human.Health > 0 and human.RootPart then
-			pos, inBounds = game.Workspace.CurrentCamera:WorldToScreenPoint(human.RootPart.Position)
-			dist = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
-			if inBounds and dist < module.FOV then
-				table.insert(valid, {v, human.RootPart.Position, dist, pos})
+		if not v:FindFirstChildWhichIsA("ForceField") then
+			human = v:FindFirstChildWhichIsA("Humanoid")
+			if human and human.Health > 0 and human.RootPart then
+				pos, inBounds = game.Workspace.CurrentCamera:WorldToScreenPoint(human.RootPart.Position)
+				dist = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
+				if inBounds and (module.Mode == 1 or (module.Mode == 2 and dist < module.FOV)) then
+					table.insert(valid, {v, human.RootPart.Position, dist, pos})
+				end
 			end
 		end
 	end
@@ -120,7 +122,7 @@ function module.SetEnabled(state)
 				fovPos = Vector2.new(Mouse.X, Mouse.Y + 36)
 				fovCirc.Position = fovPos
 				fovLine.From = fovPos
-				fovCirc.Visible = true
+				fovCirc.Visible = module.Mode == 2
 				for k,v in pairs(GetValidTargets()) do
 					los, _, _G.AIMBOT_CurrentTarget = _G.AIMBOT_CheckLoS(v[1])
 					if los then

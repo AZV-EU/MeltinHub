@@ -1,4 +1,4 @@
-local Version = "1.9.8c"
+local Version = "1.9.8d"
 _G.MeltinENV = 0
 -- ENVIRONMENT: 0 = public, 1 = dev (local)
 
@@ -747,6 +747,8 @@ else
 	_G.SenHub.Parent = _G.SafeGetService("CoreGui")
 end
 
+local SENHUB_RUNNING = true
+
 local connections = {}
 
 --[[
@@ -975,9 +977,8 @@ do -- 								CHARACTER CATEGORY
 	forceClassicCam:SetChecked(false)
 	
 	task.spawn(function()
-		local senhub = _G.SenHub
 		local human
-		while task.wait(2) and senhub and senhub.Parent do
+		while task.wait(2) and SENHUB_RUNNING do
 			if forceClassicCam.Checked then
 				plr.CameraMode = Enum.CameraMode.Classic
 			end
@@ -1039,6 +1040,8 @@ do -- 								ENVIRONMENT CATEGORY
 		end
 		targetPlayer = (targetPlayer and targetPlayer.Parent) and targetPlayer or nil
 		selectPlayerBtn:SetText(targetPlayer and targetPlayer.DisplayName or "Select Player")
+		local espData = targetPlayer and _G.ESPModule_GetESPData(targetPlayer) or nil
+		selectPlayerBtn._GuiObject.TextColor3 = espData and espData.Color or (targetPlayer and targetPlayer.TeamColor.Color or Color3.new(1, 1, 1))
 	end
 	local spectateTarget = nil
 	selectPlayerBtn	= environmentCategory:AddButton("Select Player", function()
@@ -1113,10 +1116,9 @@ do -- 								ENVIRONMENT CATEGORY
 	toolKill.Inline = true
 	
 	task.spawn(function()
-		local _senhub = _G.SenHub
 		local tool, handle, targetRoot, targetHandle
 		local targetHuman
-		while task.wait(0.05) and _senhub and _senhub.Parent do
+		while task.wait(0.05) and SENHUB_RUNNING do
 			found = false
 			if toolKill.Checked and plr.Character and targetPlayer and targetPlayer.Character then
 				targetHuman = targetPlayer.Character:FindFirstChildWhichIsA("Humanoid")
@@ -1129,6 +1131,7 @@ do -- 								ENVIRONMENT CATEGORY
 								if v:IsA("BasePart") then
 									firetouchinterest(v, handle, 1)
 									firetouchinterest(v, handle, 0)
+									break
 								end
 							end
 						end
@@ -1171,38 +1174,41 @@ do -- 								ENVIRONMENT CATEGORY
 	end)
 	stalkerBtn.Enabled = not blacklistOptions["Stalker"]
 	
-	local spectateBtn = nil
+	local spectateBtn = environmentCategory:AddCheckbox("Spectate", function(state)
+		if state and targetPlayer and targetPlayer.Character then
+			local human = targetPlayer.Character:FindFirstChildWhichIsA("Humanoid")
+			if human then
+				game.Workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
+				game.Workspace.CurrentCamera.CameraSubject = human
+			end
+		elseif plr and plr.Character then
+			local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
+			if human then
+				game.Workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
+				game.Workspace.CurrentCamera.CameraSubject = human
+			end
+		end
+	end)
 	
-	spectateBtn = environmentCategory:AddButton("Spectate", function()
-		if isSpectating then
-			isSpectating = false
-			spectateBtn.Text = "Spectate"
-			spectateTarget = nil
-			delay(0.05, function()
-				if plr and plr.Character then
+	task.spawn(function()
+		while task.wait(.5) and SENHUB_RUNNING do
+			if spectateBtn.Checked then
+				if targetPlayer and targetPlayer.Character then
+					local human = targetPlayer.Character:FindFirstChildWhichIsA("Humanoid")
+					if human then
+						game.Workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
+						game.Workspace.CurrentCamera.CameraSubject = human
+					end
+				elseif plr and plr.Character then
 					local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
 					if human then
 						game.Workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
 						game.Workspace.CurrentCamera.CameraSubject = human
 					end
 				end
-			end)
-		else
-			spectateTarget = targetPlayer
-			isSpectating = true
-			spectateBtn.Text = "Stop Spectating"
-		end
-	end)
-	
-	table.insert(connections, RunService.RenderStepped:Connect(function()
-		if isSpectating and spectateTarget and spectateTarget.Character then
-			local human = spectateTarget.Character:FindFirstChildWhichIsA("Humanoid")
-			if human then
-				game.Workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
-				game.Workspace.CurrentCamera.CameraSubject = human
 			end
 		end
-	end))
+	end)
 end
 
 do -- 								OTHER CATEGORY
@@ -1293,4 +1299,6 @@ _G.SenHub.OnDestroy = function()
 	if _G.EXECUTOR_CONSOLE_LOG_FUNC then
 		_G.EXECUTOR_CONSOLE_LOG_FUNC:Enable()
 	end
+	
+	SENHUB_RUNNING = false
 end
