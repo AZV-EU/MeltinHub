@@ -118,10 +118,11 @@ function module.Init(category, connections)
 							predict = (ball.AssemblyLinearVelocity * .25).Magnitude
 							velToPlayer = ball.AssemblyLinearVelocity:Dot(rootPos - ballPos)
 							--autoDeflectLabel:SetText(string.format("%.1f", predict))
-							if (tick() - lastParried >= .5 and predict >= (dist - 10)) or (velToPlayer > 0 and dist <= 15) then
+							tick() - lastParried >= .5
+							if velToPlayer > 0 and (predict >= (dist - 10) or dist <= 15) then
 								swordsController:Parry()
-								lastParried = tick()
-								task.wait()
+								--lastParried = tick()
+								--task.wait()
 							end
 							break
 						end

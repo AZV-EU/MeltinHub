@@ -3,20 +3,14 @@ local module = {
 	ModuleVersion = "1.0"
 }
 
--- rhrhffhf1
-
-local plr = game.Players.LocalPlayer
-if not plr then return module end
-local mouse = plr:GetMouse()
-local RunService = game:GetService("RunService")
-local ContextActionService = game:GetService("ContextActionService")
-local UserInputService = game:GetService("UserInputService")
-
 local hopping = false
-local moduleOn = true
 local objects = {}
-
 function module.Init(category, connections)
+	local plr = game.Players.LocalPlayer
+	local mouse = plr:GetMouse()
+	
+	local animals = game.Workspace:WaitForChild("Animals")
+	
 	_G.ESPModule_Database.Storages["Enemies"].Rule = function(target)
 		if target:IsA("Player") and plr.Team and target.Team
 			and target.Team.Name ~= "Civilians" and
@@ -43,20 +37,45 @@ function module.Init(category, connections)
 				return tool and tool:FindFirstChild("GunType")
 			end
 		end
+		_G.AIMBOT_AimFunc = nil
+		
+		local gunScripts = ReplicatedStorage:WaitForChild("GunScripts")
+		for gunName,gunData in pairs(require(gunScripts:WaitForChild("GunStats"))) do
+			gunData.AutoFire = true
+		end
+		
+		local createShot = require(ReplicatedStorage:WaitForChild("GunScripts"):WaitForChild("CreateShot"))
+		if _G.CreateShot_ORIG then
+			createShot.CreateShot = _G.CreateShot_ORIG
+			_G.CreateShot_ORIG = nil
+		end
+		_G.CreateShot_ORIG = createShot.CreateShot
+		createShot.CreateShot = function(shotInfo)
+			if shotInfo.BulletOwner == plr then
+				if _G.AIMBOT_CurrentTarget then
+					shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, _G.AIMBOT_CurrentTarget.Position)
+					pcall(_G.CreateShot_ORIG, shotInfo)
+				end
+				return
+			end
+			_G.CreateShot_ORIG(shotInfo)
+		end
 	end
 	
-	local stateConfig = plr:WaitForChild("StateConfig")
 	local stats = plr:WaitForChild("Stats")
 	local states = plr:WaitForChild("States")
+	local settings = plr:WaitForChild("Settings")
+	local stateConfig = plr:WaitForChild("StateConfig")
 	
 	local lassod = states:WaitForChild("Lassod")
+	local lassoTarget = states:WaitForChild("LassoTarget")
 	local hogtied = states:WaitForChild("Hogtied")
 	
 	local mle = stateConfig:WaitForChild("MouseLockEnabled")
-	local mre = mle:WaitForChild("MouseRotateEnabled")
+	_G.IndexEmulator:SetKeyValue(mle, "Value", false)
+	_G.IndexEmulator:SetKeyValue(mle:WaitForChild("MouseRotateEnabled"), "Value", false)
+	_G.IndexEmulator:SetKeyValue(settings:WaitForChild("AimLock"), "Value", false)
 	
-	mle.Value = false
-	mre.Value = false
 	repeat wait() until plr.Character
 	--plr.Character:WaitForChild("LookAnimate").Disabled = true
 	plr.Character:WaitForChild("CharacterLocal")
@@ -65,7 +84,7 @@ function module.Init(category, connections)
 	local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
 	if human then
 		human.WalkSpeed = 38
-		table.insert(connections, human.Changed:Connect(function()
+		table.insert(connections, human:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
 			human.WalkSpeed = 38
 		end))
 	end
@@ -73,36 +92,36 @@ function module.Init(category, connections)
 		RunService:UnbindFromRenderStep("CameraOffset")
 	end)
 	
+	table.insert(connections, lassoTarget:GetPropertyChangedSignal("Value"):Connect(function()
+		task.wait(.3) -- wait for ping
+		local target = lassoTarget.Value
+		if target and target:FindFirstChild("States") and target.States:FindFirstChild("Hogtied") and not target.States.Hogtied.Value then
+			ReplicatedStorage.GeneralEvents.LassoEvents:FireServer("Hogtie", target)
+		end
+	end))
+	
+	local hijackFuncs = {}
 	local hijackedTools = {}
 	local function hijackTool(tool)
 		if tool:IsA("Tool") and not hijackedTools[tool] then
 			hijackedTools[tool] = true
-			local equipped = false
-			table.insert(connections, tool.Equipped:Connect(function()
-				equipped = true
-				wait(.1)
-				mle.Value = false
-				mre.Value = false
-				if tool.Name == "Lasso" then
-					spawn(function()
-						local lassod, hogtied
-						while wait(.25) and equipped and moduleOn do
-							for k,v in pairs(game.Players:GetPlayers()) do
-								if v ~= plr then
-									lassod, hogtied = v:WaitForChild("States"):WaitForChild("Lassod"),
-										v.States:WaitForChild("Hogtied")
-									if not hogtied.Value and lassod.Value == plr then
-										game.ReplicatedStorage.GeneralEvents.LassoEvents:FireServer("Hogtie", v)
-									end
-								end
-							end
-						end
-					end)
+			
+			if tool:FindFirstChild("GunType") then
+				table.insert(connections, tool.Equipped:Connect(function()
+					_G.AimbotModule.SetEnabled(true)
+				end))
+				table.insert(connections, tool.Unequipped:Connect(function()
+					_G.AimbotModule.SetEnabled(false)
+				end))
+			end
+			
+			local func = hijackFuncs[tool.Name]
+			if func then
+				local f, err = pcall(func, tool)
+				if not f then
+					warn("Failed to hijack tool:", err)
 				end
-			end))
-			table.insert(connections, tool.Unequipped:Connect(function()
-				equipped = false
-			end))
+			end
 		end
 	end
 	
@@ -133,7 +152,6 @@ function module.Init(category, connections)
 	autoSkin:SetChecked(true)
 	autoSkin.Inline = true
 	
-	local animals = game.Workspace:WaitForChild("Animals")
 	local animalsList = {}
 	local function checkAnimals()
 		for k, animal in pairs(animals:GetChildren()) do
@@ -164,7 +182,7 @@ function module.Init(category, connections)
 	checkAnimals()
 	
 	spawn(function()
-		while moduleOn and task.wait(.2) do
+		while module.On and task.wait(.3) do
 			if autoSkin.Checked then
 				for animal, data in pairs(animalsList) do
 					if data and data.Humanoid and data.Humanoid.Health <= 0 and data.Humanoid.RootPart and
@@ -432,7 +450,7 @@ function module.Init(category, connections)
 						local targetPos = locations[hopLocation.SelectedIndex]
 						local maxHopDistance = 30
 						local originalY = human.RootPart.Position.Y
-						while hopping and moduleOn and human.Health > 0 and (human.RootPart.Position - targetPos).Magnitude > maxHopDistance do
+						while hopping and module.On and human.Health > 0 and (human.RootPart.Position - targetPos).Magnitude > maxHopDistance do
 							local nextHop = CFrame.new(Vector3.new(human.RootPart.Position.X, originalY, human.RootPart.Position.Z), targetPos) * CFrame.new(0, 0, -maxHopDistance)
 							human.RootPart.CFrame = nextHop
 							originalY = nextHop.Position.Y
@@ -452,7 +470,8 @@ function module.Init(category, connections)
 	local Christmas = game.Workspace:FindFirstChild("Christmas")
 	if Christmas then
 		local autoChristmas = category:AddCheckbox("Auto Collect Presents")
-		--autoChristmas:SetChecked(true)
+		autoChristmas:SetChecked(true)
+		
 		task.spawn(function()
 			while task.wait(5) and module.On do
 				local lostPresents = Christmas:FindFirstChild("LostPresents")
@@ -473,7 +492,6 @@ function module.Shutdown()
 		v:Destroy()
 	end
 	hopping = false
-	moduleOn = false
 end
 
 return module

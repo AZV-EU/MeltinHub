@@ -27,22 +27,30 @@ _G.AIMBOT_CanUse = function()
 	return plr.Character and plr.Character:FindFirstChildWhichIsA("Tool")
 end
 
-_G.AIMBOT_ValidTargetsStorage = "Enemies"
+--_G.AIMBOT_ValidTargetsStorage = "Enemies"
+
+_G.AIMBOT_GetTargets = function()
+	local targets = {}
+	for _,player in pairs(game.Players:GetPlayers()) do
+		if v ~= plr and v.Character and v.Character.Parent and
+			_G.ESPModule_Database.Storages["Enemies"].Rule(v) then
+			table.insert(targets, v.Character)
+		end
+	end
+	return targets
+end
 
 local function GetValidTargets()
 	local valid = {}
 	local human, head, castPoints, pos, inBounds, dist
 	local mousePos = Vector2.new(Mouse.X, Mouse.Y)
-	for k,v in pairs(game.Players:GetPlayers()) do
-		if v ~= plr and v.Character and v.Character.Parent and
-			_G.ESPModule_Database.Storages[_G.AIMBOT_ValidTargetsStorage].Rule(v) then
-			human = v.Character:FindFirstChildWhichIsA("Humanoid")
-			if v.Character and v.Character.Parent and human and human.Health > 0 and human.RootPart then
-				pos, inBounds = game.Workspace.CurrentCamera:WorldToScreenPoint(human.RootPart.Position)
-				dist = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
-				if inBounds and dist < module.FOV then
-					table.insert(valid, {v.Character, human.RootPart.Position, dist, pos})
-				end
+	for k,v in pairs(_G.AIMBOT_GetTargets()) do
+		human = v:FindFirstChildWhichIsA("Humanoid")
+		if human and human.Health > 0 and human.RootPart then
+			pos, inBounds = game.Workspace.CurrentCamera:WorldToScreenPoint(human.RootPart.Position)
+			dist = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
+			if inBounds and dist < module.FOV then
+				table.insert(valid, {v, human.RootPart.Position, dist, pos})
 			end
 		end
 	end
@@ -61,7 +69,7 @@ _G.AIMBOT_GetCastParts = function(target)
 end
 
 do
-	local result, losDist, source
+	local result, losDir, source
 	_G.AIMBOT_FireSource = function()
 		if plr and plr.Character then
 			return plr.Character:GetPivot().Position
@@ -72,10 +80,10 @@ do
 		source = _G.AIMBOT_FireSource()
 		if not source then return end
 		for k,v in ipairs(_G.AIMBOT_GetCastParts(target)) do
-			losDist = (v.Position - source)
+			losDir = (v.Position - source)
 			result = _G.AIMBOT_Raycast(
 				source,
-				losDist.Unit * (losDist.Magnitude * 2))
+				losDir.Unit * (losDir.Magnitude * 2))
 			if not result or result.Instance == nil or result.Instance:IsDescendantOf(target) then
 				return true, result, v
 			end
@@ -84,7 +92,9 @@ do
 end
 
 _G.AIMBOT_AimFunc = function()
-	game.Workspace.CurrentCamera.CFrame = CFrame.new(game.Workspace.CurrentCamera.CFrame.Position, _G.AIMBOT_CurrentTarget.Position)
+	if _G.AIMBOT_CurrentTarget then
+		game.Workspace.CurrentCamera.CFrame = CFrame.new(game.Workspace.CurrentCamera.CFrame.Position, _G.AIMBOT_CurrentTarget.Position)
+	end
 end
 
 _G.AIMBOT_CurrentTarget = nil

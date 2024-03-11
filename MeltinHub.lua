@@ -1,4 +1,4 @@
-local Version = "1.9.8a"
+local Version = "1.9.8c"
 _G.MeltinENV = 0
 -- ENVIRONMENT: 0 = public, 1 = dev (local)
 
@@ -590,6 +590,8 @@ do -- prevent loggers
 			if getinfo(v.Function).short_src ~= "" then
 				v:Disable()
 				loggersDisabled += 1
+			else
+				_G.EXECUTOR_CONSOLE_LOG_FUNC = v
 			end
 		end
 	end)
@@ -654,8 +656,8 @@ function _G.TouchObject(object)
 	if plr.Character then
 		local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
 		if human and human.RootPart then
-			firetouchinterest(human.RootPart, object, 0)
 			firetouchinterest(human.RootPart, object, 1)
+			firetouchinterest(human.RootPart, object, 0)
 			return true
 		end
 	end
@@ -664,8 +666,8 @@ end
 function _G.TouchObjects(objectA, objectB)
 	if not objectA or not objectB then return end
 	--if not objectB:FindFirstChildWhichIsA("TouchTransmitter") then return end
-	firetouchinterest(objectA, objectB, 0)
 	firetouchinterest(objectA, objectB, 1)
+	firetouchinterest(objectA, objectB, 0)
 	return true
 end
 
@@ -713,12 +715,13 @@ _G.MethodEmulator:SetMethodOverride(plr, "Kick", function(self, hook, message)
 	end
 end)
 
---[[
 if not _G.MouseEmulatorLoaded then
 	_G.MouseEmulator = loadCoreModule(BaseUrl .. "MouseEmulator.lua", "Mouse Emulator")
 	if not _G.MouseEmulator then warn("Could not load mouse emulator") return end
 	_G.MouseEmulatorLoaded = true -- uncomment for release, comment for debugging
 end
+
+--[[
 if not _G.KeyboardEmulatorLoaded then
 	_G.KeyboardEmulator = loadCoreModule(BaseUrl .. "KeyboardEmulator.lua", "Keyboard Emulator")
 	if not _G.KeyboardEmulator then warn("Could not load keyboard emulator") return end
@@ -728,14 +731,14 @@ end]]
 --_G.Autopilot = loadCoreModule(BaseUrl .. "Autopilot.lua", "Autopilot")
 --if not _G.Autopilot then warn("Could not load autopilot") return end
 
-local aimbotModule = loadCoreModule(BaseUrl .. "AimbotModule.lua", "Aimbot Module")
-if not aimbotModule then warn("Could not load aimbot module") return end
+_G.AimbotModule = loadCoreModule(BaseUrl .. "AimbotModule.lua", "Aimbot Module")
+if not _G.AimbotModule then warn("Could not load aimbot module") return end
 
-local espModule = loadCoreModule(BaseUrl .. "ESPModule_3.lua", "ESP Module")
-if not espModule then warn("Could not load esp module") return end
+_G.ESPModule = loadCoreModule(BaseUrl .. "ESPModule_3.lua", "ESP Module")
+if not _G.ESPModule then warn("Could not load esp module") return end
 
-local flightModule = loadCoreModule(BaseUrl .. "FlightModule.lua", "Flight Module")
-if not flightModule then warn("Could not load flight module") return end
+_G.FlightModule = loadCoreModule(BaseUrl .. "FlightModule.lua", "Flight Module")
+if not _G.FlightModule then warn("Could not load flight module") return end
 
 _G.SenHub = mg.New("MeltinHub v" .. tostring(Version) .. (isDev and " [DEV]" or ""))
 if gethgui then
@@ -819,27 +822,27 @@ do -- 								CHARACTER CATEGORY
 	local flightToggle, flightBalancer
 	
 	flightToggle = characterCategory:AddCheckbox("[LAlt] Flight", function(checked)
-		flightModule.SetEnabled(checked)
+		_G.FlightModule.SetEnabled(checked)
 		--flightBalancer.Visible = checked
 	end)
 	
 	local flingToggle = characterCategory:AddCheckbox("[F4] Fling", function(checked)
-		flightModule.SetFling(checked)
+		_G.FlightModule.SetFling(checked)
 	end)
 	flingToggle.Inline = true
 	
 	local aimbotToggle = characterCategory:AddCheckbox("[F7] Aimbot", function(checked)
-		aimbotModule.SetEnabled(checked)
+		_G.AimbotModule.SetEnabled(checked)
 	end)
 	
 	table.insert(connections, UserInputService.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.Keyboard then
 			if input.KeyCode == Enum.KeyCode.F4 then
 				flingToggle:SetChecked(not flingToggle.Checked)
-				flightModule.SetFling(flingToggle.Checked)
+				_G.FlightModule.SetFling(flingToggle.Checked)
 			elseif input.KeyCode == Enum.KeyCode.F7 then
-				aimbotModule.SetEnabled(not aimbotModule.Enabled)
-				aimbotToggle:SetChecked(aimbotModule.Enabled)
+				_G.AimbotModule.SetEnabled(not _G.AimbotModule.Enabled)
+				aimbotToggle:SetChecked(_G.AimbotModule.Enabled)
 			end
 		end
 	end))
@@ -849,9 +852,9 @@ do -- 								CHARACTER CATEGORY
 	local fBoost = nil
 	local defaultStartBoost = 500
 	fBoost = characterCategory:AddSlider("Flight Boost Speed", defaultStartBoost, 80, 20000, function(newValue)
-		flightModule.BoostSpeed = newValue
+		_G.FlightModule.BoostSpeed = newValue
 	end)
-	flightModule.BoostSpeed = defaultStartBoost
+	_G.FlightModule.BoostSpeed = defaultStartBoost
 	
 	local speedSlider = nil
 	local jumpSlider = nil
@@ -986,7 +989,7 @@ do -- 								ENVIRONMENT CATEGORY
 	local environmentCategory = _G.SenHub:AddCategory("Environment")
 	
 	environmentCategory:AddCheckbox("Humanoids ESP", function(checked)
-		espModule.SetEnabled(checked)
+		_G.ESPModule.SetEnabled(checked)
 	end).Enabled = not blacklistOptions["ESP"]
 	
 	environmentCategory:AddButton("Fake-Freeze", function()
@@ -1110,7 +1113,7 @@ do -- 								ENVIRONMENT CATEGORY
 	toolKill.Inline = true
 	
 	task.spawn(function()
-		local senhub = _G.SenHub
+		local _senhub = _G.SenHub
 		local tool, handle, targetRoot, targetHandle
 		local targetHuman
 		while task.wait(0.05) and _senhub and _senhub.Parent do
@@ -1223,9 +1226,18 @@ do -- 								OTHER CATEGORY
 	
 	if setfpscap then
 		local fpsUnlock = otherCategory:AddCheckbox("FPS Unlock", function(state)
-			setfpscap(144)
+			setfpscap(state and 144 or 60)
 		end)
 		--fpsUnlock:SetChecked(true)
+	end
+	if _G.EXECUTOR_CONSOLE_LOG_FUNC then
+		otherCategory:AddCheckbox("Executor Console Enabled", function(state)
+			if state then
+				_G.EXECUTOR_CONSOLE_LOG_FUNC:Enable()
+			else
+				_G.EXECUTOR_CONSOLE_LOG_FUNC:Disable()
+			end
+		end):SetChecked(true)
 	end
 end
 
@@ -1261,9 +1273,9 @@ _G.SenHub.OnDestroy = function()
 		end
 	end
 	
-	espModule.SetEnabled(false)
-	aimbotModule.SetEnabled(false)
-	flightModule.SetEnabled(false)
+	_G.ESPModule.SetEnabled(false)
+	_G.AimbotModule.SetEnabled(false)
+	_G.FlightModule.SetEnabled(false)
 	
 	if gameModule then
 		gameModule.On = false
@@ -1278,7 +1290,7 @@ _G.SenHub.OnDestroy = function()
 	_G.MethodEmulator:Reset()
 	--_G.KeyboardEmulator:Reset()
 	--_G.Autopilot:Reset()
-	
-	--_G.ANTILAG = false
-	--_G.EnableConnections(_G.SafeGetService("LogService").MessageOut)
+	if _G.EXECUTOR_CONSOLE_LOG_FUNC then
+		_G.EXECUTOR_CONSOLE_LOG_FUNC:Enable()
+	end
 end
