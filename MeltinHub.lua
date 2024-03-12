@@ -1,4 +1,4 @@
-local Version = "1.9.9a"
+local Version = "1.9.9b"
 _G.MeltinENV = 0
 -- ENVIRONMENT: 0 = public, 1 = dev (local)
 
@@ -24,6 +24,34 @@ loadstring(game:HttpGet(BaseUrl .. "AnticheatBypass.lua", true))()
 
 if not cloneref then
 	loadstring(game:HttpGet("https://raw.githubusercontent.com/Babyhamsta/RBLX_Scripts/main/Universal/CloneRef.lua", true))()
+	--[[
+	local a=Instance.new("Part")
+	for b,c in pairs(getreg()) do
+		if type(c)=="table" and #c then
+			if rawget(c,"__mode") == "kvs" then
+				for d,e in pairs(c) do
+					if e==a then
+						getgenv().InstanceList=c;
+						break 
+					end
+				end
+			end
+		end
+	end
+	local f={}
+	function f.invalidate(g)
+		if not InstanceList then return end
+		for b,c in pairs(InstanceList) do
+			if c==g then
+				InstanceList[b]=nil
+				return g
+			end
+		end
+	end
+	if not cloneref then
+		getgenv().cloneref = f.invalidate
+	end
+	]]
 end
 
 function _G.SafeGetService(service)
@@ -75,7 +103,7 @@ local repository = {
 	[1001911915] = "FarmingAndFriends.lua",
 	[4986566693] = "AnimeChampions.lua",
 	[1802741133] = "CabinCrewSimulator.lua",
-	[5274658895] = "Minecraft.lua",
+	[5587847116] = "Minecraft.lua",
 	[4777817887] = "BladeBall.lua"
 }
 
