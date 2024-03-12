@@ -27,12 +27,10 @@ _G.AIMBOT_CanUse = function()
 	return plr.Character and plr.Character:FindFirstChildWhichIsA("Tool")
 end
 
---_G.AIMBOT_ValidTargetsStorage = "Enemies"
-
 _G.AIMBOT_GetTargets = function()
 	local targets = {}
 	for _,v in pairs(game.Players:GetPlayers()) do
-		if v ~= plr and v.Character and v.Character.Parent and
+		if v ~= plr and v.Character and v.Character.Parent and not plr:IsFriendsWith(v.UserId) and
 			_G.ESPModule_Database.Storages["Enemies"].Rule(v) then
 			table.insert(targets, v.Character)
 		end
@@ -141,6 +139,8 @@ function module.SetEnabled(state)
 				fovCirc.Color = _G.COLOR3DEF.WHITE
 			else
 				fovCirc.Visible = false
+				fovLine.Visible = false
+				fovCirc.Color = _G.COLOR3DEF.WHITE
 			end
 		end)
 	elseif not state and module.Enabled then

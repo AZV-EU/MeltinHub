@@ -10,22 +10,6 @@ function module.Init(category, connections)
 	local mouse = plr:GetMouse()
 	
 	local animals = game.Workspace:WaitForChild("Animals")
-	--[[_G.AIMBOT_GetTargets = function()
-		local targets = {}
-		for _,v in pairs(game.Players:GetPlayers()) do
-			if v ~= plr and v.Character and v.Character.Parent and
-				_G.ESPModule_Database.Storages["Enemies"].Rule(v) then
-				table.insert(targets, v.Character)
-			end
-		end
-		for _,v in pairs(animals:GetChildren()) do
-			local human = v:FindFirstChildWhichIsA("Humanoid")
-			if human and human.Health > 0 then
-				table.insert(targets, v)
-			end
-		end
-		return targets
-	end]]
 
 	_G.ESPModule_Database.Storages["Enemies"].Rule = function(target)
 		if target:IsA("Player") and plr.Team and target.Team
@@ -60,20 +44,27 @@ function module.Init(category, connections)
 			gunData.AutoFire = true
 		end
 		
-		local createShot = require(ReplicatedStorage:WaitForChild("GunScripts"):WaitForChild("CreateShot"))
+		local gunLocalModule = require(gunScripts:WaitForChild("GunLocalModule"))
+		if _G.GLM_Fire_ORIG then
+			gunLocalModule.Fire = _G.GLM_Fire_ORIG
+			_G.GLM_Fire_ORIG = nil
+		end
+		_G.GLM_Fire_ORIG = gunLocalModule.Fire
+		gunLocalModule.Fire = function(...)
+			if not _G.AimbotModule.Enabled or _G.AIMBOT_CurrentTarget then
+				_G.GLM_Fire_ORIG(...)
+			end
+		end
+		
+		local createShot = require(gunScripts:WaitForChild("CreateShot"))
 		if _G.CreateShot_ORIG then
 			createShot.CreateShot = _G.CreateShot_ORIG
 			_G.CreateShot_ORIG = nil
 		end
 		_G.CreateShot_ORIG = createShot.CreateShot
 		createShot.CreateShot = function(shotInfo)
-			if shotInfo.BulletOwner == plr then
-				if _G.AIMBOT_CurrentTarget then
-					shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, _G.AIMBOT_CurrentTarget.Position)
-					--pcall(_G.CreateShot_ORIG, shotInfo)
-				--else
-					--shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, mouse.Hit.Position)
-				end
+			if shotInfo.BulletOwner == plr and _G.AIMBOT_CurrentTarget then
+				shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, _G.AIMBOT_CurrentTarget.Position)
 			end
 			_G.CreateShot_ORIG(shotInfo)
 		end

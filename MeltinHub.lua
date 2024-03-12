@@ -1,4 +1,4 @@
-local Version = "1.9.8e"
+local Version = "1.9.9"
 _G.MeltinENV = 0
 -- ENVIRONMENT: 0 = public, 1 = dev (local)
 
@@ -814,9 +814,9 @@ local blacklistOptions = blacklisted[game.GameId] or {}
 
 plr.CameraMaxZoomDistance = 1000
 
---[[if UserInputService.TouchEnabled then
+if UserInputService.TouchEnabled then
 	loadCoreModule(BaseUrl .. "AndroidPatches.lua", "AndroidPatches")
-end]]
+end
 
 do -- 								CHARACTER CATEGORY
 	local characterCategory = _G.SenHub:AddCategory("Character")

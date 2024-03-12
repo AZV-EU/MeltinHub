@@ -28,12 +28,8 @@ function module.Init(category, connections)
 	
 	plr:WaitForChild("PlayerScripts"):WaitForChild("GlitchCheck").Disabled = true
 	
-	local autoAim = category:AddCheckbox("Auto-aim")
-	autoAim.Inline = true
-	autoAim:SetChecked(true)
-	local autoFire = category:AddCheckbox("Auto-fire")
-	autoFire:SetChecked(true)
-	
+	local autoAim
+	local autoFire
 	
 	for _, weaponData in pairs(gunsDb) do
 		weaponData.Automatic = true
@@ -77,7 +73,6 @@ function module.Init(category, connections)
 		end
 	end
 	print("Update DPS in shop UI")
-	
 	
 	_G.AIMBOT_Raycast_GetFilterDescendantsInstances = function()
 		local filter = {game.Workspace.CurrentCamera, plr.Character, game.Workspace.deadenemies}
@@ -190,57 +185,105 @@ function module.Init(category, connections)
 		end
 	end
 	
-	table.insert(connections, game:GetService("RunService").Stepped:Connect(function()
-		_G.MouseEmulator:FreeMouseControl()
-		if plr.Character then
-			currentWeapon = plr.Character:FindFirstChildWhichIsA("Tool")
-		else
-			currentWeapon = nil
-		end
-		if autoAim.Checked and currentWeapon then
-			local targetPool = {
-				normal = {},
-				boss = {}
-			}
-			
-			local los, ray, part
-			for k,v in pairs(zombiesFolder:GetChildren()) do
-				if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-					los, ray, part = _G.AIMBOT_CheckLoS(v)
-					if los then
-						table.insert(targetPool.normal, {v, ray, part})
-					end
-				end
-			end
-			for k,v in pairs(bossFolder:GetChildren()) do
-				if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-					los, ray, part = _G.AIMBOT_CheckLoS(v)
-					if los then
-						table.insert(targetPool.boss, {v, ray, part})
-					end
-				end
-			end
-			local targetPart, targetRay = selectBestTarget(targetPool)
-			if targetPart then
-				if autoFire.Checked then
-					fireWeapon(currentWeapon, targetRay)
-				else
-					_G.MouseEmulator:TakeMouseControl()
-					_G.MouseEmulator:TargetPart(targetPart)
-					return
-				end
-			end
-		end
-		if not autoFire.Checked then
-			_G.MouseEmulator:FreeMouseControl()
-		end
-	end))
-	
-	local function deafenHits()
+	local knifeController
+	local function setupCharacter()
 		plr:WaitForChild("PlayerGui"):WaitForChild("Aim"):WaitForChild("hitsound").Volume = 0
 	end
-	deafenHits()
+	setupCharacter(plr.Character)
 	table.insert(connections, plr.CharacterAdded:Connect(deafenHits))
+	
+	local forHackers = ReplicatedStorage:WaitForChild("forhackers")
+	autoAim = category:AddCheckbox("Auto-aim", function(state)
+		if state then
+			task.spawn(function()
+				while task.wait() and autoAim.Checked and module.On do
+					_G.MouseEmulator:FreeMouseControl()
+					if plr.Character then
+						currentWeapon = plr.Character:FindFirstChildWhichIsA("Tool")
+					end
+					if currentWeapon then
+						knifeController = currentWeapon:FindFirstChild("KnifeController")
+						if knifeController then 	-- knife attack
+							local targetPool = {
+								normal = {},
+								boss = {}
+							}
+							
+							for k,v in pairs(zombiesFolder:GetChildren()) do
+								if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+									table.insert(targetPool.normal, {v, nil, v.Humanoid.RootPart})
+								end
+							end
+							for k,v in pairs(game.Players:GetPlayers()) do
+								if v ~= plr and v.Character and v.Character:FindFirstChild("plr_animator") and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0 then
+									pcall(function() v.Character.Parent = zombiesFolder end)
+									table.insert(targetPool.normal, {v.Character, nil, v.Character.Humanoid.RootPart})
+								end
+							end
+							for k,v in pairs(bossFolder:GetChildren()) do
+								if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+									table.insert(targetPool.boss, {v, nil, v.Humanoid.RootPart})
+								end
+							end
+							local targetPart = selectBestTarget(targetPool)
+							if targetPart and autoFire.Checked then
+								forHackers:InvokeServer("hit", currentWeapon.Name, targetPart)
+								task.wait(.3)
+							end
+						else 				-- gun attack
+							local targetPool = {
+								normal = {},
+								boss = {}
+							}
+							
+							local los, ray, part
+							for k,v in pairs(zombiesFolder:GetChildren()) do
+								if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+									los, ray, part = _G.AIMBOT_CheckLoS(v)
+									if los then
+										table.insert(targetPool.normal, {v, ray, part})
+									end
+								end
+							end
+							for k,v in pairs(game.Players:GetPlayers()) do
+								if v ~= plr and v.Character and v.Character:FindFirstChild("plr_animator") and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0 then
+									los, ray, part = _G.AIMBOT_CheckLoS(v.Character)
+									if los then
+										pcall(function() v.Character.Parent = zombiesFolder end)
+										table.insert(targetPool.normal, {v.Character, ray, part})
+									end
+								end
+							end
+							for k,v in pairs(bossFolder:GetChildren()) do
+								if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+									los, ray, part = _G.AIMBOT_CheckLoS(v)
+									if los then
+										table.insert(targetPool.boss, {v, ray, part})
+									end
+								end
+							end
+							local targetPart, targetRay = selectBestTarget(targetPool)
+							if targetPart then
+								if autoFire.Checked then
+									fireWeapon(currentWeapon, targetRay)
+								else
+									_G.MouseEmulator:TakeMouseControl()
+									_G.MouseEmulator:TargetPart(targetPart)
+									return
+								end
+							end
+						end
+					end
+				end
+			end)
+		else
+			_G.MouseEmulator:FreeMouseControl()
+		end
+	end)
+	autoAim.Inline = true
+	autoFire = category:AddCheckbox("Auto-fire")
+	autoAim:SetChecked(true)
+	autoFire:SetChecked(true)
 	
 	do
 		local tasksNames = {}
