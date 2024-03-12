@@ -124,6 +124,24 @@ function module.Init(category, connections)
 		end
 	end
 	
+	do
+		local function fixMap(map)
+			if not map then return end
+			for k,v in pairs(map:GetDescendants()) do
+				if v:IsA("BasePart") and v.Transparency >= 1 then
+					v.CanCollide = false
+					v.Transparency = 0.95
+				end
+			end
+		end
+		local mapFolder = game.Workspace:WaitForChild("map")
+		fixMap(mapFolder:GetChildren()[1])
+		table.insert(connections, mapFolder.ChildAdded:Connect(function(child)
+			task.wait(3)
+			fixMap(child)
+		end))
+	end
+	
 	local function selectBestTarget(targetPool)
 		--[[ priorities reminder:
 			#1 : distance < 20 studs
