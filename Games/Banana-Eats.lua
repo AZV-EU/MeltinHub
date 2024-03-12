@@ -214,6 +214,7 @@ function module.Init(category, connections)
 			if autoCake.Checked then
 				cake = puzzles:FindFirstChild("CakePuzzle")
 				if cake then
+					local items = map:FindFirstChild("Items")
 					for k,v in pairs(items:GetChildren()) do
 						if v.Name == "CakePlate" and v:FindFirstChild("Model") and v.Model:FindFirstChild("CakePlate") and
 							v.Model.CakePlate:FindFirstChild("Root") and v.Model.CakePlate.Root:FindFirstChild("ClickDetector") then
