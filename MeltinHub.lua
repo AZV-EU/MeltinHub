@@ -1,4 +1,4 @@
-local Version = "1.9.9c"
+local Version = "1.9.9d"
 _G.MeltinENV = 0
 -- ENVIRONMENT: 0 = public, 1 = dev (local)
 
@@ -104,7 +104,8 @@ local repository = {
 	[4986566693] = "AnimeChampions.lua",
 	[1802741133] = "CabinCrewSimulator.lua",
 	[5587847116] = "Minecraft.lua",
-	[4777817887] = "BladeBall.lua"
+	[4777817887] = "BladeBall.lua",
+	[16876831] = "BloodAndIron.lua"
 }
 
 -- setclipboard(tostring(game.GameId))
@@ -1143,24 +1144,30 @@ do -- 								ENVIRONMENT CATEGORY
 	local toolKill = environmentCategory:AddCheckbox("Tool Kill")
 	toolKill.Inline = true
 	
+	do
+		local tool
+		_G.ToolKillHandle = function(chr)
+			tool = chr:FindFirstChildWhichIsA("Tool")
+			if tool and tool.RequiresHandle then
+				return tool:FindFirstChild("Handle")
+			end
+		end
+	end
+	
 	task.spawn(function()
-		local tool, handle, targetRoot, targetHandle
+		local handle, targetRoot, targetHandle
 		local targetHuman
 		while task.wait(0.05) and SENHUB_RUNNING do
 			found = false
 			if toolKill.Checked and plr.Character and targetPlayer and targetPlayer.Character then
 				targetHuman = targetPlayer.Character:FindFirstChildWhichIsA("Humanoid")
 				if targetHuman and targetHuman.RootPart then
-					tool = plr.Character:FindFirstChildWhichIsA("Tool")
-					if tool and tool.RequiresHandle then
-						handle = tool:FindFirstChild("Handle")
-						if handle and handle:IsA("BasePart") then
-							for k,v in pairs(targetPlayer.Character:GetChildren()) do
-								if v:IsA("BasePart") then
-									firetouchinterest(v, handle, 1)
-									firetouchinterest(v, handle, 0)
-									break
-								end
+					handle = _G.ToolKillHandle(plr.Character)
+					if handle and handle:IsA("BasePart") then
+						for k,v in pairs(targetPlayer.Character:GetChildren()) do
+							if v:IsA("BasePart") then
+								firetouchinterest(v, handle, 1)
+								firetouchinterest(v, handle, 0)
 							end
 						end
 					end

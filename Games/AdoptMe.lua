@@ -236,7 +236,7 @@ function module.Init(category, connections)
 					for _,useBlock in pairs(useBlocks:GetChildren()) do
 						local config = useBlock:FindFirstChild("Configuration")
 						if config and config:FindFirstChild("use_id") and config.use_id.Value == use_id then
-							table.insert(furniture, fModel:GetAttribute("furniture_unique"))
+							table.insert(furniture, {ID = fModel:GetAttribute("furniture_unique"), Model = fModel, UseBlock = useBlock})
 						end
 					end
 				end
@@ -430,7 +430,7 @@ function module.Init(category, connections)
 		return GetAilmentFromUnique(ailment_unique, isPlayer) == nil
 	end
 	
-	local eventLock
+	local eventLock = function() end
 	local function WaitUntilAilmentDone(ailment_unique, isPlayer)
 		local waitStart = tick()
 		repeat
@@ -448,8 +448,8 @@ function module.Init(category, connections)
 				task.spawn(function()
 					HousingAPI.ActivateFurniture:InvokeServer(
 						plr,
-						beds[1],
-						"UseBlock",
+						beds[1].ID,
+						beds[1].UseBlock.Name,
 						{cframe = plr.Character:GetPivot()},
 						isPlayer and plr.Character or Pet.Model
 					)
@@ -466,12 +466,15 @@ function module.Init(category, connections)
 				if not TeleportHome() then return end
 			end
 			local showers = GetFurnitureByUseId("generic_shower")
+			if #showers == 0 then
+				showers = GetFurnitureByUseId("generic_bathtub")
+			end
 			if #showers > 0 then
 				task.spawn(function()
 					HousingAPI.ActivateFurniture:InvokeServer(
 						plr,
-						showers[1],
-						"UseBlock",
+						showers[1].ID,
+						showers[1].UseBlock.Name,
 						{cframe = plr.Character:GetPivot()},
 						isPlayer and plr.Character or Pet.Model
 					)
@@ -636,136 +639,29 @@ function module.Init(category, connections)
 	category:AddButton("Teleport Home", TeleportHome).Inline = true
 	category:AddButton("Teleport Town", TeleportToMainMap)
 	
-	local EventItems = {
-		["fire_dimension_2024_burnt_bites_bait"] = true
-	}
+	local EventItems = {}
 	do -- events
 		local category = _G.SenHub:AddCategory("Events")
+		local autoEvents
 		
-		local StaticMap = game.Workspace:WaitForChild("StaticMap")
-		local EventHandlers = {}
-		
-		local eventLabel = category:AddLabel("Idle")
-		local eventMapName = "FireDimension"
-		
-		local cookingDuration, lureDuration = 600, 600
-		
-		if not _G.nextCookTimestamp then _G.nextCookTimestamp = 0 end
-		if not _G.lureTimer then _G.lureTimer = 0 end
-		
-		local hasBaits = true
-		local function shouldCollectIngredients()
-			local recipeData = clientData.get("fire_dimension_2024_daily_recipe")
-			if autoEvents.Checked and recipeData and recipeData.recipe then
-				for ingredient,amount in pairs(recipeData.recipe) do
-					if GetFoodCount(ingredient) < amount then
-						return true
-					end
-				end
-			end
-			return false
-		end
-		
-		local function canCook()
-			local recipeData = clientData.get("fire_dimension_2024_daily_recipe")
-			if recipeData then
-				local state = clientData.get("fire_dimension_2024_cooking_state")
+		if eventHandler and eventMapName then
+			autoEvents = category:AddCheckbox("Auto-event", function(state)
 				if state then
-					return recipeData.cycle ~= state.most_recently_completed_cycle
-				end
-			end
-		end
-		
-		local handlerLock = false
-		eventLock = function()
-			return autoEvents.Checked and handlerLock
-		end
-		
-		local function eventHandler()
-			local recipeData = clientData.get("fire_dimension_2024_daily_recipe")
-			if recipeData then
-				_G.nextCookTimestamp = recipeData.next_cycle_timestamp - 18000
-			end
-			if lureDuration - (tick() - _G.lureTimer) > 1000 then _G.lureTimer = 0 end
-			
-			if canCook() then
-				handlerLock = true
-				if TeleportToPlace(eventMapName, true) then
-					local map = GetInteriorBlueprint()
-					if map then
-						local cooking = map:FindFirstChild("Cooking")
-						if cooking then
-							local locations = cooking:FindFirstChild("IngredientLocations")
-							local pots = cooking:FindFirstChild("Pots")
-							if locations and pots then
-								if shouldCollectIngredients() then
-									for _,fruitDir in pairs(locations:GetChildren()) do
-										for _,fruitModel in pairs(fruitDir:GetChildren()) do
-											if fruitModel:FindFirstChild("Fruit") then
-												FireDimensionAPI.PickFruit:InvokeServer(fruitDir.Name:lower(), tonumber(fruitModel.Name))
-											end
-										end
-									end
-								end
-								local recipe = pots:FindFirstChildWhichIsA("Folder")
-								if recipe then
-									local potModel = recipe:FindFirstChildWhichIsA("Model")
-									if potModel and potModel:FindFirstChild("GlowCircle") then
-										FireDimensionAPI.CookRecipe:InvokeServer(recipe.Name)
-									end
-								end
+					task.spawn(function()
+						while task.wait(1) and autoEvents.Checked and module.On do
+							eventLabel:SetText("Doing event: " .. tostring(eventMapName))
+							local f, err = pcall(eventHandler)
+							if not f then
+								warn("eventhandler error:", err)
+								eventLabel:SetText("HANDLER ERROR!")
+								task.wait(5)
 							end
 						end
-					end
+						eventLabel:SetText("Idle")
+					end)
 				end
-			end
-			local bait_unique = GetLowestUsesFood("fire_dimension_2024_burnt_bites_bait")
-			if autoEvents.Checked and hasBaits and bait_unique and tick() - _G.lureTimer > lureDuration then
-				handlerLock = true
-				if TeleportHome() then
-					_G.lureTimer = UseBait(bait_unique)
-					if _G.lureTimer ~= nil then
-						hasBaits = true
-					else
-						_G.lureTimer = 0
-						hasBaits = false
-					end
-				end
-			end
-			local cookSeconds, cookMinutes = _G.TimeComponents(_G.nextCookTimestamp - tick())
-			if _G.lureTimer > 0 then
-				local lureSeconds, lureMinutes = _G.TimeComponents(_G.lureTimer + lureDuration - tick())
-				eventLabel:SetText(
-					string.format("COOK: [%02d:%02d] LURE: [%02d:%02d]",
-					cookMinutes, cookSeconds,
-					lureMinutes, lureSeconds
-				))
-			else
-				eventLabel:SetText(
-					string.format("COOK: [%02d:%02d] !NO LURE!",
-					cookMinutes, cookSeconds
-				))
-			end
-			handlerLock = false
+			end)
 		end
-		
-		autoEvents = category:AddCheckbox("Auto-event", function(state)
-			hasBaits = true
-			if state then
-				task.spawn(function()
-					while task.wait(1) and autoEvents.Checked and module.On do
-						eventLabel:SetText("Doing event: " .. tostring(eventMapName))
-						local f, err = pcall(eventHandler)
-						if not f then
-							warn("eventhandler error:", err)
-							eventLabel:SetText("HANDLER ERROR!")
-							task.wait(5)
-						end
-					end
-					eventLabel:SetText("Idle")
-				end)
-			end
-		end)
 	end
 	
 	do -- trading
