@@ -155,18 +155,18 @@ function module.Init(category, connections)
 		local createShot = require(gunScripts:WaitForChild("CreateShot"))
 		_G.CreateShot_ORIG = createShot.CreateShot
 		createShot.CreateShot = function(shotInfo)
-			if shotInfo.BulletOwner == plr then
-				if _G.AIMBOT_CurrentTarget then
-					shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, _G.AIMBOT_CurrentTarget.Position)
-				else
+			if shotInfo.BulletOwner == plr and _G.AIMBOT_CurrentTarget then
+				--if _G.AIMBOT_CurrentTarget then
+				shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, _G.AIMBOT_CurrentTarget.Position)
+				--[[else
 					local mouseRay = game.Workspace.CurrentCamera:ScreenPointToRay(mouse.X, mouse.Y)
 					local raycastHit = _G.AIMBOT_Raycast(mouseRay.Origin, mouseRay.Direction * 1000)
 					if raycastHit then
 						shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, raycastHit.Position)
 					else
 						shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, mouse.Hit.Position)
-					end
-				end
+					end]]
+				--end
 			end
 			_G.CreateShot_ORIG(shotInfo)
 		end
