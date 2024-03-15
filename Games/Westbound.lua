@@ -140,7 +140,6 @@ function module.Init(category, connections)
 		for gunName,gunData in pairs(require(gunScripts:WaitForChild("GunStats"))) do
 			gunData.AutoFire = true
 			gunData.ReloadSpeed = 0.1
-			gunData.equipTime = 0
 			gunData.Spread = 0
 			gunData.MaxShots = 1000
 		end
