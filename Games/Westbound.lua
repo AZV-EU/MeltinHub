@@ -114,7 +114,7 @@ function module.Init(category, connections)
 			_G.AIMBOT_CanUse = function()
 				if plr.Character then
 					tool = plr.Character:FindFirstChildWhichIsA("Tool")
-					return tool and tool:FindFirstChild("GunType")
+					return tool and (tool:FindFirstChild("GunType") or tool.Name == "Bow")
 				end
 				return false
 			end
@@ -141,9 +141,12 @@ function module.Init(category, connections)
 			gunData.AutoFire = true
 			gunData.ReloadSpeed = 0.1
 			gunData.Spread = 0
+			gunData.FullReload = true
 			gunData.MaxShots = 1000
 		end
 		
+		-- TODO: !!! BOW !!!
+
 		local gunLocalModule = require(gunScripts:WaitForChild("GunLocalModule"))
 		_G.GLM_Fire_ORIG = gunLocalModule.Fire
 		gunLocalModule.Fire = function(...)
@@ -155,18 +158,14 @@ function module.Init(category, connections)
 		local createShot = require(gunScripts:WaitForChild("CreateShot"))
 		_G.CreateShot_ORIG = createShot.CreateShot
 		createShot.CreateShot = function(shotInfo)
-			if shotInfo.BulletOwner == plr and _G.AIMBOT_CurrentTarget then
-				--if _G.AIMBOT_CurrentTarget then
-				shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, _G.AIMBOT_CurrentTarget.Position)
-				--[[else
-					local mouseRay = game.Workspace.CurrentCamera:ScreenPointToRay(mouse.X, mouse.Y)
-					local raycastHit = _G.AIMBOT_Raycast(mouseRay.Origin, mouseRay.Direction * 1000)
-					if raycastHit then
-						shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, raycastHit.Position)
-					else
-						shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, mouse.Hit.Position)
-					end]]
-				--end
+			if shotInfo.BulletOwner == plr then
+				if _G.AIMBOT_CurrentTarget then
+					shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, _G.AIMBOT_CurrentTarget.Position)
+				end
+				if shotInfo.GunType and shotInfo.GunType == "Bow" then
+					shotInfo.Speed = 20
+					shotInfo.DamageModifier = 1
+				end
 			end
 			_G.CreateShot_ORIG(shotInfo)
 		end
@@ -213,6 +212,21 @@ function module.Init(category, connections)
 			table.insert(connections, tool.Unequipped:Connect(function()
 				equipped = false
 			end))
+			
+			if tool.Name == "Bow" then
+				local fl = tool:WaitForChild("FullyLoaded")
+				fl.Value = true
+				_G.IndexEmulator:SetKeyValue(fl, "Value", true)
+			elseif tool.Name == "Health Potion" then
+				local hc = tool:WaitForChild("HealClient")
+				for _,func in pairs(getfunctions(hc)) do
+					for idx,const in pairs(debug.getconstants(func)) do
+						if const == 3.6 then
+							debug.setconstant(func, idx, 0.1)
+						end
+					end
+				end
+			end
 		end
 	end
 	table.insert(connections, plr.Backpack.ChildAdded:Connect(hijackTool))
@@ -556,7 +570,7 @@ function module.Init(category, connections)
 		end).Inline = true
 		
 		do
-			local gear = {"RifleAmmo", "SniperAmmo", "BIG Dynamite", "Health Potion"}
+			local gear = {"Arrows", "RifleAmmo", "SniperAmmo", "BIG Dynamite", "Health Potion"}
 			category:AddButton("Buy Max Gear", function()
 				for _,item in pairs(gear) do
 					GeneralEvents.BuyItem:InvokeServer(item, true)
