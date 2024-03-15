@@ -25,16 +25,16 @@ local function GetTotalMass()
 	return mass
 end
 
-local respawnConn = nil, nil
-
+local respawnConn = nil
 local function resetFlight()
+	pcall(function() RunService:UnbindFromRenderStep("flight") end)
+	flying = false
+	
 	if not plr.Character or not plr.Character.Parent then return end
 	local myChar = plr.Character
 	local myHuman = myChar:FindFirstChildWhichIsA("Humanoid")
 	if not myHuman then return end
 	
-	RunService:UnbindFromRenderStep("flight")
-	flying = false
 	if myHuman and myHuman.RootPart ~= nil and myHuman.RootPart.Parent ~= nil then
 		myHuman.PlatformStand = false
 		local root = myHuman.RootPart
@@ -48,7 +48,6 @@ local bAngVel
 
 local customPhysicalPropsDb = {}
 local resetConn
-
 function module.SetFling(state)
 	if state and not module.Fling then
 		module.Fling = true
@@ -65,10 +64,10 @@ function module.SetFling(state)
 				
 				bAngVel = Instance.new("BodyAngularVelocity")
 				bAngVel.Name = "1e02#lkre03EPAS"
-				bAngVel.Parent = human.RootPart
 				bAngVel.AngularVelocity = Vector3.new(0, 99999, 0)
 				bAngVel.MaxTorque = Vector3.new(0, math.huge, 0)
 				bAngVel.P = math.huge
+				bAngVel.Parent = human.RootPart
 				
 				spawn(function()
 					while module.Fling do
@@ -80,10 +79,8 @@ function module.SetFling(state)
 				end)
 				
 				resetConn = human.Died:Connect(function()
-					module.SetEnabled(false)
+					module.SetFling(false)
 				end)
-				
-				module.Fling = true
 			end
 		end
 	elseif not state and module.Fling then
@@ -123,7 +120,7 @@ function module.SetFling(state)
 end
 
 function module.SetEnabled(state)
-	if state and not module.Enabled then
+	if state and not module.Enabled and plr.Character then
 		module.Enabled = true
 		ContextActionService:BindAction("FlightToggle", function(_, inputState)
 			if not plr.Character or not plr.Character.Parent then return end
@@ -185,22 +182,21 @@ function module.SetEnabled(state)
 		end, true, Enum.KeyCode.LeftControl, Enum.KeyCode.ButtonR2)
 		ContextActionService:SetTitle("FlightToggle", "Fly")
 		
-		respawnConn = plr.CharacterAdded:Connect(function()
-			spawn(function()
-				repeat plr.Character.ChildAdded:Wait() until plr.Character:FindFirstChildWhichIsA("Humanoid")
-				local wasEnabled = module.Enabled
-				module.SetEnabled(false)
-				if wasEnabled then
-					module.SetEnabled(true)
-				end
+		local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
+		if human then
+			respawnConn = human.Died:Connect(function()
+				resetFlight()
 			end)
-		end)
+		end
 	elseif not state and module.Enabled then
 		module.Enabled = false
-		module.Fling = false
+		module.SetFling(false)
 		resetFlight()
 		ContextActionService:UnbindAction("FlightToggle")
-		if respawnConn ~= nil then respawnConn:Disconnect() end
+		if respawnConn then
+			respawnConn:Disconnect()
+			respawnConn = nil
+		end
 	end
 end
 

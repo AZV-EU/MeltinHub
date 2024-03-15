@@ -36,8 +36,9 @@ OriginalFunc = hookmetamethod(game, "__namecall", newcclosure(function(Self, ...
     if not checkcaller() then
 		local NamecallMethod = getnamecallmethod()
 		
-		if ETable[Self] and ETable[Self].Methods[NamecallMethod] then
-			local results = {pcall(ETable[Self].Overrides[NamecallMethod], Self, OriginalFunc, ...)}
+		local eTable = ETable[Self] or ETable[Self.Name]
+		if eTable and eTable.Methods[NamecallMethod] then
+			local results = {pcall(eTable.Overrides[NamecallMethod], Self, OriginalFunc, ...)}
 			if results[1] then
 				return table.unpack(results, 2)
 			end

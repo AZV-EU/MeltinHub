@@ -1,4 +1,4 @@
-local Version = "1.9.9d"
+local Version = "1.9.10"
 _G.MeltinENV = 0
 -- ENVIRONMENT: 0 = public, 1 = dev (local)
 
@@ -138,6 +138,8 @@ function _G.DisableConnections(signal)
 		for _,conn in pairs(getconnections(signal)) do
 			conn:Disable()
 		end
+	else
+		warn("DisableConnections object provided is not an RBXScriptSignal.")
 	end
 end
 
@@ -146,6 +148,8 @@ function _G.EnableConnections(signal)
 		for _,conn in pairs(getconnections(signal)) do
 			conn:Enable()
 		end
+	else
+		warn("EnableConnections object provided is not an RBXScriptSignal.")
 	end
 end
 
@@ -195,9 +199,9 @@ function _G.Stringify(obj, no_quotas)
 	elseif type(obj) == "function" then
 		local funcInfo = getinfo(obj)
 		if funcInfo and funcInfo.name ~= "" then
-			return _G.Stringify(string.format("function: %s", funcInfo.name), no_quotas)
+			return _G.Stringify(string.format("function %s() end", funcInfo.name), true)
 		end
-	elseif type(obj) == "userdata" and typeof(value) ~= "EnumItem" then
+	elseif type(obj) == "userdata" and typeof(obj) ~= "EnumItem" then
 		if typeof(obj) ~= "Instance" then
 			return typeof(obj) .. ".new(" .. tostring(obj) .. ")"
 		else
@@ -329,6 +333,9 @@ if isDev then
 				env = getsenv_orig(script)
 			elseif script:IsA("ModuleScript") then
 				env = require(script)
+				if type(env) ~= "table" then
+					env = {env}
+				end
 			end
 		end)
 		if not f then
@@ -842,6 +849,7 @@ end))
 local blacklistOptions = blacklisted[game.GameId] or {}
 
 plr.CameraMaxZoomDistance = 1000
+_G.IndexEmulator:SetKeyValue(plr, "CameraMaxZoomDistance", 1000)
 
 if UserInputService.TouchEnabled then
 	loadCoreModule(BaseUrl .. "AndroidPatches.lua", "AndroidPatches")
@@ -850,35 +858,37 @@ end
 do -- 								CHARACTER CATEGORY
 	local characterCategory = _G.SenHub:AddCategory("Character")
 	
-	local flightToggle, flightBalancer
-	
-	flightToggle = characterCategory:AddCheckbox("[LAlt] Flight", function(checked)
+	local flightToggle = characterCategory:AddCheckbox("[LCtrl] Flight", function(checked)
 		_G.FlightModule.SetEnabled(checked)
-		--flightBalancer.Visible = checked
 	end)
+	flightToggle.Inline = true
+	flightToggle:SetChecked(true)
 	
 	local flingToggle = characterCategory:AddCheckbox("[F4] Fling", function(checked)
 		_G.FlightModule.SetFling(checked)
 	end)
-	flingToggle.Inline = true
 	
 	local aimbotToggle = characterCategory:AddCheckbox("[F7] Aimbot", function(checked)
 		_G.AimbotModule.SetEnabled(checked)
 	end)
+	if _G.AIMBOT_FireFunc then
+		aimbotToggle.Inline = true
+		local autofireToggle = characterCategory:AddCheckbox("F8 Autofire", function(checked)
+			_G.AimbotModule.Autofire = checked
+		end)
+	end
 	
 	table.insert(connections, UserInputService.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.Keyboard then
 			if input.KeyCode == Enum.KeyCode.F4 then
 				flingToggle:SetChecked(not flingToggle.Checked)
-				_G.FlightModule.SetFling(flingToggle.Checked)
 			elseif input.KeyCode == Enum.KeyCode.F7 then
-				_G.AimbotModule.SetEnabled(not _G.AimbotModule.Enabled)
-				aimbotToggle:SetChecked(_G.AimbotModule.Enabled)
+				aimbotToggle:SetChecked(not aimbotToggle.Checked)
+			elseif input.KeyCode == Enum.KeyCode.F8 and autofireToggle then
+				autofireToggle:SetChecked(not autofireToggle.Checked)
 			end
 		end
 	end))
-	
-	flightToggle:SetChecked(true)
 
 	local fBoost = nil
 	local defaultStartBoost = 500
@@ -922,7 +932,7 @@ do -- 								CHARACTER CATEGORY
 		if plr.Character then
 			local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
 			if human then
-				if human.UseJumpPower then
+				if useJP then
 					human.JumpPower = newValue
 				else
 					human.JumpHeight = newValue
@@ -939,10 +949,10 @@ do -- 								CHARACTER CATEGORY
 			if human then
 				if human:GetState() ~= Enum.HumanoidStateType.Physics then
 					human:ChangeState(Enum.HumanoidStateType.Physics)
-					local animate = plr.Character:FindFirstChild("Animate")
+					--[[local animate = plr.Character:FindFirstChild("Animate")
 					if animate then
 						
-					end
+					end]]
 				else
 					human:ChangeState(Enum.HumanoidStateType.GettingUp)
 				end
@@ -959,18 +969,18 @@ do -- 								CHARACTER CATEGORY
 			useJP = human.UseJumpPower
 			
 			if not freezeValues.Checked then
-				speedSlider:SetSliderValue(human.WalkSpeed)
+				speedSlider:SetSliderValue(human.WalkSpeed, true)
 				if useJP then
-					jumpSlider:SetSliderValue(human.JumpPower)
+					jumpSlider:SetSliderValue(human.JumpPower, true)
 				else
-					jumpSlider:SetSliderValue(human.JumpHeight)
+					jumpSlider:SetSliderValue(human.JumpHeight, true)
 				end
 			end
 			table.insert(connections, human:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
 				if freezeValues.Checked and human.WalkSpeed ~= speedSlider.Value then
 					human.WalkSpeed = speedSlider.Value
 				else
-					speedSlider:SetSliderValue(human.WalkSpeed)
+					speedSlider:SetSliderValue(human.WalkSpeed, true)
 				end
 			end))
 			table.insert(connections, human:GetPropertyChangedSignal("JumpPower"):Connect(function()
@@ -978,7 +988,7 @@ do -- 								CHARACTER CATEGORY
 					if freezeValues.Checked then
 						human.JumpPower.Value = jumpSlider.Value
 					else
-						speedSlider:SetSliderValue(human.JumpPower)
+						speedSlider:SetSliderValue(human.JumpPower, true)
 					end
 				end
 			end))
@@ -987,7 +997,7 @@ do -- 								CHARACTER CATEGORY
 					if freezeValues.Checked then
 						human.JumpHeight.Value = jumpSlider.Value
 					else
-						speedSlider:SetSliderValue(human.JumpHeight)
+						speedSlider:SetSliderValue(human.JumpHeight, true)
 					end
 				end
 			end))
@@ -1271,7 +1281,7 @@ do -- 								OTHER CATEGORY
 		end)
 		--fpsUnlock:SetChecked(true)
 	end
-	if _G.EXECUTOR_CONSOLE_LOG_FUNC then
+	--[[if _G.EXECUTOR_CONSOLE_LOG_FUNC then
 		otherCategory:AddCheckbox("Executor Console Enabled", function(state)
 			if state then
 				_G.EXECUTOR_CONSOLE_LOG_FUNC:Enable()
@@ -1279,6 +1289,27 @@ do -- 								OTHER CATEGORY
 				_G.EXECUTOR_CONSOLE_LOG_FUNC:Disable()
 			end
 		end):SetChecked(true)
+	end]]
+	
+	do
+		local muteLogs = otherCategory:AddCheckbox("Mute In-game Console Logs")
+		muteLogs:SetChecked(true)
+		
+		_G.print_ORIG = getrenv().print
+		getrenv().print = function(...)
+			local source = getcallingscript()
+			if not muteLogs.Checked or (not source or not source.Parent) then
+				_G.print_ORIG(...)
+			end
+		end
+		
+		_G.warn_ORIG = getrenv().warn
+		getrenv().warn = function(...)
+			local source = getcallingscript()
+			if not muteLogs.Checked or (not source or not source.Parent) then
+				_G.print_ORIG(...)
+			end
+		end
 	end
 end
 
@@ -1317,6 +1348,7 @@ _G.SenHub.OnDestroy = function()
 	_G.ESPModule.SetEnabled(false)
 	_G.AimbotModule.SetEnabled(false)
 	_G.FlightModule.SetEnabled(false)
+	_G.FlightModule.SetFling(false)
 	
 	if gameModule then
 		gameModule.On = false
@@ -1329,10 +1361,22 @@ _G.SenHub.OnDestroy = function()
 	
 	_G.IndexEmulator:Reset()
 	_G.MethodEmulator:Reset()
+	_G.MouseEmulator:FreeMouseControl()
 	--_G.KeyboardEmulator:Reset()
 	--_G.Autopilot:Reset()
-	if _G.EXECUTOR_CONSOLE_LOG_FUNC then
+	
+	--[[if _G.EXECUTOR_CONSOLE_LOG_FUNC then
 		_G.EXECUTOR_CONSOLE_LOG_FUNC:Enable()
+		_G.EXECUTOR_CONSOLE_LOG_FUNC = nil
+	end]]
+	
+	if _G.print_ORIG then
+		getrenv().print = _G.print_ORIG
+		_G.print_ORIG = nil
+	end
+	if _G.warn_ORIG then
+		getrenv().warn = _G.warn_ORIG
+		_G.warn_ORIG = nil
 	end
 	
 	SENHUB_RUNNING = false

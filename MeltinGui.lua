@@ -999,11 +999,11 @@ function module.New(title, startPosition)
 			elseif content.Type == "Slider" then
 				local sliding = false
 				
-				function content:SetSliderValue(newValue)
+				function content:SetSliderValue(newValue, silent)
 					if newValue ~= content.Value then
 						content.Value = content.ScrollDelta * math.floor(math.max(content.Minimum, math.min(content.Maximum, newValue))/content.ScrollDelta)
 						Update()
-						if content.Action then
+						if content.Action and not silent then
 							local f, err = pcall(content.Action, newValue)
 							if not f then
 								warn(err)

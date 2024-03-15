@@ -7,10 +7,81 @@ local hopping = false
 local objects = {}
 function module.Init(category, connections)
 	local plr = game.Players.LocalPlayer
+	local PlayerScripts = plr:WaitForChild("PlayerScripts")
 	local mouse = plr:GetMouse()
 	
+	local sharedModules = ReplicatedStorage:WaitForChild("SharedModules")
+	local generalEvents = ReplicatedStorage:WaitForChild("GeneralEvents")
+	
 	local animals = game.Workspace:WaitForChild("Animals")
-
+	local shops = game.Workspace:WaitForChild("Shops")
+	
+	local GeneralEvents = {
+		LassoEvents = generalEvents:WaitForChild("LassoEvents"),
+		SkinAnimal = generalEvents:WaitForChild("SkinAnimal"),
+		SitDown = generalEvents:WaitForChild("SitDown"),
+		MountHorse = generalEvents:WaitForChild("MountHorse"),
+		Rob = generalEvents:WaitForChild("Rob"),
+		Inventory = generalEvents:WaitForChild("Inventory"),
+		BuyItem = generalEvents:WaitForChild("BuyItem")
+	}
+	
+	local stats = plr:WaitForChild("Stats")
+	local states = plr:WaitForChild("States")
+	local settings = plr:WaitForChild("Settings")
+	local stateConfig = plr:WaitForChild("StateConfig")
+	
+	local lassod = states:WaitForChild("Lassod")
+	local lassoTarget = states:WaitForChild("LassoTarget")
+	local hogtied = states:WaitForChild("Hogtied")
+	
+	local mle = stateConfig:WaitForChild("MouseLockEnabled")
+	_G.IndexEmulator:SetKeyValue(mle, "Value", false)
+	_G.IndexEmulator:SetKeyValue(mle:WaitForChild("MouseRotateEnabled"), "Value", false)
+	_G.IndexEmulator:SetKeyValue(settings:WaitForChild("AimLock"), "Value", false)
+	
+	do -- buggy context streaming override, let roblox handle performance
+		local gs = PlayerScripts:WaitForChild("GeneralStreaming")
+		
+		if gs.Enabled then
+			gs.Enabled = false
+			
+			local cs = ReplicatedStorage:WaitForChild("ContextStreaming")
+			for _,obj in pairs(cs:GetChildren()) do
+				obj.Parent = game.Workspace
+			end
+		end
+	end
+	
+	do
+		local ragdoll = require(sharedModules:WaitForChild("Ragdoll"))
+		if _G.OriginalRagdoll then
+			for key,func in pairs(_G.OriginalRagdoll) do
+				ragdoll[key] = func
+			end
+			_G.OriginalRagdoll = nil
+		end
+		
+		_G.OriginalRagdoll = {}
+		for key,func in pairs(ragdoll) do
+			_G.OriginalRagdoll[key] = func
+			ragdoll[key] = function()
+				if _G.MeltinENV == 1 then
+					print("Prevented", key, "execution.")
+				end
+			end
+		end
+		
+		_G.MethodEmulator:SetMethodOverride("ChangeCharacter", "FireServer", function(self, orig, key, value, ...)
+			if key == "Damage" or key == "Ragdoll" then return end
+			return orig(self, key, value, ...)
+		end)
+	end
+	
+	pcall(function()
+		RunService:UnbindFromRenderStep("CameraOffset")
+	end)
+	
 	_G.ESPModule_Database.Storages["Enemies"].Rule = function(target)
 		if target:IsA("Player") and plr.Team and target.Team
 			and target.Team.Name ~= "Civilians" and
@@ -29,7 +100,7 @@ function module.Init(category, connections)
 		return false
 	end
 	
-	do
+	do -- aimbot
 		local tool
 		_G.AIMBOT_CanUse = function()
 			if plr.Character then
@@ -37,6 +108,21 @@ function module.Init(category, connections)
 				return tool and tool:FindFirstChild("GunType")
 			end
 		end
+		
+		do
+			local targets
+			_G.AIMBOT_GetTargets = function()
+				targets = animals:GetChildren()
+				for _,v in pairs(game.Players:GetPlayers()) do
+					if v ~= plr and v.Character and v.Character.Parent and not plr:IsFriendsWith(v.UserId) and
+						_G.ESPModule_Database.Storages["Enemies"].Rule(v) then
+						table.insert(targets, v.Character)
+					end
+				end
+				return targets
+			end
+		end
+		
 		_G.AIMBOT_AimFunc = nil
 		
 		local gunScripts = ReplicatedStorage:WaitForChild("GunScripts")
@@ -45,10 +131,6 @@ function module.Init(category, connections)
 		end
 		
 		local gunLocalModule = require(gunScripts:WaitForChild("GunLocalModule"))
-		if _G.GLM_Fire_ORIG then
-			gunLocalModule.Fire = _G.GLM_Fire_ORIG
-			_G.GLM_Fire_ORIG = nil
-		end
 		_G.GLM_Fire_ORIG = gunLocalModule.Fire
 		gunLocalModule.Fire = function(...)
 			if not _G.AimbotModule.Enabled or _G.AIMBOT_CurrentTarget then
@@ -57,56 +139,39 @@ function module.Init(category, connections)
 		end
 		
 		local createShot = require(gunScripts:WaitForChild("CreateShot"))
-		if _G.CreateShot_ORIG then
-			createShot.CreateShot = _G.CreateShot_ORIG
-			_G.CreateShot_ORIG = nil
-		end
 		_G.CreateShot_ORIG = createShot.CreateShot
 		createShot.CreateShot = function(shotInfo)
-			if shotInfo.BulletOwner == plr and _G.AIMBOT_CurrentTarget then
-				shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, _G.AIMBOT_CurrentTarget.Position)
+			if shotInfo.BulletOwner == plr then
+				if _G.AIMBOT_CurrentTarget then
+					shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, _G.AIMBOT_CurrentTarget.Position)
+				else
+					local mouseRay = game.Workspace.CurrentCamera:ScreenPointToRay(mouse.X, mouse.Y)
+					local raycastHit = _G.AIMBOT_Raycast(mouseRay.Origin, mouseRay.Direction * 1000)
+					if raycastHit then
+						shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, raycastHit.Position)
+					else
+						shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, mouse.Hit.Position)
+					end
+				end
 			end
 			_G.CreateShot_ORIG(shotInfo)
 		end
 	end
 	
-	local stats = plr:WaitForChild("Stats")
-	local states = plr:WaitForChild("States")
-	local settings = plr:WaitForChild("Settings")
-	local stateConfig = plr:WaitForChild("StateConfig")
-	
-	local lassod = states:WaitForChild("Lassod")
-	local lassoTarget = states:WaitForChild("LassoTarget")
-	local hogtied = states:WaitForChild("Hogtied")
-	
-	local mle = stateConfig:WaitForChild("MouseLockEnabled")
-	_G.IndexEmulator:SetKeyValue(mle, "Value", false)
-	_G.IndexEmulator:SetKeyValue(mle:WaitForChild("MouseRotateEnabled"), "Value", false)
-	_G.IndexEmulator:SetKeyValue(settings:WaitForChild("AimLock"), "Value", false)
-	
-	repeat wait() until plr.Character
-	--plr.Character:WaitForChild("LookAnimate").Disabled = true
-	plr.Character:WaitForChild("CharacterLocal")
-	wait(1)
-	plr.Character.CharacterLocal.Disabled = true
-	local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
-	if human then
-		human.WalkSpeed = 38
-		table.insert(connections, human:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
-			human.WalkSpeed = 38
+	do -- auto-lasso
+		table.insert(connections, lassoTarget:GetPropertyChangedSignal("Value"):Connect(function()
+			local target = lassoTarget.Value
+			while task.wait(.3) and target do
+				if target:FindFirstChild("States") and target.States:FindFirstChild("Hogtied") then
+					if not target.States.Hogtied.Value then
+						GeneralEvents.LassoEvents:FireServer("Hogtie", target)
+					else
+						break
+					end
+				end
+			end
 		end))
 	end
-	pcall(function()
-		RunService:UnbindFromRenderStep("CameraOffset")
-	end)
-	
-	table.insert(connections, lassoTarget:GetPropertyChangedSignal("Value"):Connect(function()
-		task.wait(.3) -- wait for ping
-		local target = lassoTarget.Value
-		if target and target:FindFirstChild("States") and target.States:FindFirstChild("Hogtied") and not target.States.Hogtied.Value then
-			ReplicatedStorage.GeneralEvents.LassoEvents:FireServer("Hogtie", target)
-		end
-	end))
 	
 	local hijackFuncs = {}
 	local hijackedTools = {}
@@ -114,15 +179,26 @@ function module.Init(category, connections)
 		if tool:IsA("Tool") and not hijackedTools[tool] then
 			hijackedTools[tool] = true
 			
-			--[[
-			if tool:FindFirstChild("GunType") then
-				table.insert(connections, tool.Equipped:Connect(function()
-					_G.AimbotModule.SetEnabled(true)
-				end))
-				table.insert(connections, tool.Unequipped:Connect(function()
-					_G.AimbotModule.SetEnabled(false)
-				end))
-			end]]
+			local equipped = tool.Parent == plr.Character
+			table.insert(connections, tool.Equipped:Connect(function()
+				equipped = true
+				local mouseRay, raycastHit
+				while task.wait() and equipped do
+					if _G.AimbotModule.Enabled and plr.Character and plr.Character.PrimaryPart then
+						--[[mouseRay = game.Workspace.CurrentCamera:ScreenPointToRay(mouse.X, mouse.Y)
+						raycastHit = _G.AIMBOT_Raycast(mouseRay.Origin, mouseRay.Direction * 1000)
+						if raycastHit then
+							plr.Character.PrimaryPart.CFrame = CFrame.new(plr.Character.PrimaryPart.Position, Vector3.new(raycastHit.Position.X, plr.Character.PrimaryPart.Position.Y, raycastHit.Position.Z))
+						else]]
+							plr.Character.PrimaryPart.CFrame = CFrame.new(plr.Character.PrimaryPart.Position, Vector3.new(mouse.Hit.Position.X, plr.Character.PrimaryPart.Position.Y, mouse.Hit.Position.Z))
+						--end
+					end
+				end
+			end))
+			
+			table.insert(connections, tool.Unequipped:Connect(function()
+				equipped = false
+			end))
 			
 			local func = hijackFuncs[tool.Name]
 			if func then
@@ -133,29 +209,40 @@ function module.Init(category, connections)
 			end
 		end
 	end
+	table.insert(connections, plr.Backpack.ChildAdded:Connect(hijackTool))
 	
-	for k,v in pairs(plr.Backpack:GetChildren()) do
-		hijackTool(v)
-	end
-	
-	table.insert(connections, plr.CharacterAdded:Connect(function()
-		--plr.Character:WaitForChild("LookAnimate").Disabled = true
-		plr.Character:WaitForChild("CharacterLocal")
-		wait(1)
-		plr.Character.CharacterLocal.Disabled = true
+	local function setupCharacter(chr)
+		local human = chr:WaitForChild("Humanoid")
+		local charLocal = chr:WaitForChild("CharacterLocal")
+		task.wait(1)
+		_G.DisableConnections(human.Jumping)
+		hijackedTools = {}
 		for k,v in pairs(plr.Backpack:GetChildren()) do
 			hijackTool(v)
 		end
-		local human = plr.Character:WaitForChild("Humanoid")
-		for k,v in pairs(getconnections(human.Jumping)) do
-			v:Disable()
+		for k,v in pairs(chr:GetChildren()) do
+			hijackTool(v)
 		end
-		human.WalkSpeed = 38
-		table.insert(connections, human.Changed:Connect(function()
-			human.WalkSpeed = 38
-		end))
-	end))
-	table.insert(connections, plr.Backpack.ChildAdded:Connect(hijackTool))
+		for _,func in pairs(getfunctions(charLocal)) do
+			for idx,upvalue in pairs(getupvalues(func)) do
+				if type(upvalue) == "table" and upvalue.RunSpeed then
+					--upvalue.ZoomSpeed = upvalue.RunSpeed
+					upvalue.GunOutRunSpeed = upvalue.RunSpeed
+					upvalue.WalkSpeed = upvalue.RunSpeed
+				end
+			end
+			--[[for idx,constant in pairs(getconstants(func)) do
+				if constant == "Kick" then
+					setconstant(func, idx, "")
+				end
+			end]]
+		end
+		human.WalkSpeed = 30
+	end
+	if plr.Character then
+		setupCharacter(plr.Character)
+	end
+	table.insert(connections, plr.CharacterAdded:Connect(setupCharacter))
 	
 	local autoSkin = category:AddCheckbox("Auto-skin")
 	autoSkin:SetChecked(true)
@@ -196,7 +283,7 @@ function module.Init(category, connections)
 				for animal, data in pairs(animalsList) do
 					if data and data.Humanoid and data.Humanoid.Health <= 0 and data.Humanoid.RootPart and
 						plr:DistanceFromCharacter(data.Humanoid.RootPart.Position) <= 10 then
-						game.ReplicatedStorage.GeneralEvents.SkinAnimal:FireServer(animal)
+						GeneralEvents.SkinAnimal:FireServer(animal)
 					end
 				end
 			end
@@ -271,7 +358,9 @@ function module.Init(category, connections)
 					if not objects[model] then
 						objects[model] = espGui:Clone()
 						table.insert(connections, v.Humanoid.Died:Connect(function()
-							objects[model].TextLabel.TextColor3 = Color3.new(0.2, 0.2, 0.2) 
+							if objects[model] and objects[model]:FindFirstChild("TextLabel") then
+								objects[model].TextLabel.TextColor3 = Color3.new(0.2, 0.2, 0.2) 
+							end
 						end))
 					end
 					objects[model].Parent = model
@@ -305,7 +394,7 @@ function module.Init(category, connections)
 		
 	do
 		local function freeYourself()
-			game.ReplicatedStorage.GeneralEvents.LassoEvents:FireServer("BreakFree")
+			GeneralEvents.LassoEvents:FireServer("BreakFree")
 		end
 		
 		local freeYourselfConn
@@ -346,7 +435,19 @@ function module.Init(category, connections)
 		end
 		
 		category:AddButton("Sit on piano", function()
-			game.ReplicatedStorage.GeneralEvents.SitDown:FireServer(game.Workspace.Piano.Seat)
+			local closest, closestDist = nil, 0
+			for _,piano in pairs(game.Workspace:GetChildren()) do
+				if piano.Name == "Piano" and piano.PrimaryPart then
+					local dist = plr:DistanceFromCharacter(piano.PrimaryPart.Position)
+					if not closest or dist < closestDist then
+						closest = piano
+						closestDist = dist
+					end
+				end
+			end
+			if closest and closest:FindFirstChild("Seat") then
+				GeneralEvents.SitDown:FireServer(closest.Seat)
+			end
 		end).Inline = true
 		
 		category:AddButton("Sit on horseback", function()
@@ -367,7 +468,7 @@ function module.Init(category, connections)
 				end
 			end
 			if closestHorse then
-				game:GetService("ReplicatedStorage").GeneralEvents.MountHorse:InvokeServer(
+				GeneralEvents.MountHorse:InvokeServer(
 					closestHorse,
 					"Back"
 				)
@@ -384,9 +485,8 @@ function module.Init(category, connections)
 					end
 				end
 			end
-		end)
+		end).Inline = true
 		
-		local stealing = false
 		category:AddButton("Steal", function()
 			if states.Bag.Value >= stats.BagSizeLevel.CurrentAmount.Value then
 				stealing = false
@@ -407,7 +507,7 @@ function module.Init(category, connections)
 									v.Open.Value = true
 									wait(1)
 								end
-								game.ReplicatedStorage.GeneralEvents.Rob:FireServer("Safe", v)
+								GeneralEvents.Rob:FireServer("Safe", v)
 								wait()
 								stealing = false
 								break
@@ -420,7 +520,7 @@ function module.Init(category, connections)
 							return
 						end
 						if v and v.Active.Value == true and plr:DistanceFromCharacter(v.Union.Position) < 5 then
-							game.ReplicatedStorage.GeneralEvents.Rob:FireServer("Register",
+							GeneralEvents.Rob:FireServer("Register",
 								{
 									Part = v.Union,
 									OpenPart = v.Open,
@@ -432,11 +532,41 @@ function module.Init(category, connections)
 					end
 				end
 			end
+		end)
+		
+		--[[
+		local teleporting = false
+		category:AddButton("Sell inventory", function()
+			if teleporting then return end
+			if plr.Character and plr.Character.PrimaryPart then
+				local store = shops:FindFirstChild("OutlawGeneralStore2")
+				if store and store.PrimaryPart then
+					teleporting = true
+					local original = plr.Character.PrimaryPart.Position
+					for i = 1,5 do
+						_G.TeleportPlayerTo(store.PrimaryPart.Position)
+						GeneralEvents.Inventory:InvokeServer("Sell")
+						task.wait(.1)
+					end
+					_G.TeleportPlayerTo(original)
+					teleporting = false
+				end
+			end
 		end).Inline = true
+		]]
 		
 		category:AddButton("Sell inventory", function()
-			game.ReplicatedStorage.GeneralEvents.Inventory:InvokeServer("Sell")
-		end)
+			GeneralEvents.Inventory:InvokeServer("Sell")
+		end).Inline = true
+		
+		do
+			local gear = {"RifleAmmo", "SniperAmmo", "BIG Dynamite", "Health Potion"}
+			category:AddButton("Buy Max Gear", function()
+				for _,item in pairs(gear) do
+					GeneralEvents.BuyItem:InvokeServer(item, true)
+				end
+			end)
+		end
 		
 		local hopLocation = category:AddDropdown("Location", {"Fort Arthur", "Grayridge Bank"}, 1)
 		local locations = {
@@ -498,9 +628,33 @@ end
 
 function module.Shutdown()
 	for k,v in next, objects do
-		v:Destroy()
+		if v ~= nil and v.Parent ~= nil then
+			v:Destroy()
+		end
 	end
 	hopping = false
+	
+	local gunScripts = ReplicatedStorage:FindFirstChild("GunScripts")
+	if gunScripts then
+		local gunLocalModule = require(gunScripts:FindFirstChild("GunLocalModule"))
+		if gunLocalModule then
+			if _G.GLM_Fire_ORIG then
+				gunLocalModule.Fire = _G.GLM_Fire_ORIG
+				_G.GLM_Fire_ORIG = nil
+			end
+			if _G.GLM_CycleZoom_ORIG then
+				gunLocalModule.cycleZoom = _G.GLM_CycleZoom_ORIG
+				_G.GLM_CycleZoom_ORIG = nil
+			end
+		end
+		local createShot = require(gunScripts:FindFirstChild("CreateShot"))
+		if createShot then
+			if _G.CreateShot_ORIG then
+				createShot.CreateShot = _G.CreateShot_ORIG
+				_G.CreateShot_ORIG = nil
+			end
+		end
+	end
 end
 
 return module
