@@ -7,6 +7,7 @@ local hopping = false
 local objects = {}
 function module.Init(category, connections)
 	local plr = game.Players.LocalPlayer
+	local Backpack = plr:WaitForChild("Backpack")
 	local PlayerScripts = plr:WaitForChild("PlayerScripts")
 	local PlayerInventory = plr:WaitForChild("Inventory")
 	local mouse = plr:GetMouse()
@@ -427,11 +428,11 @@ function module.Init(category, connections)
 		table.insert(connections, PlayerInventory.ChildAdded:Connect(filterTrash))
 	end
 	
-	do
+	do -- auto-free
 		local freeYourselfConn
 		category:AddCheckbox("Auto-free", function(state)
 			if state then
-			GeneralEvents.LassoEvents:FireServer("BreakFree")
+				GeneralEvents.LassoEvents:FireServer("BreakFree")
 				freeYourselfConn = lassod.Changed:Connect(function()
 					if lassod.Value then
 						task.wait(.1)
@@ -569,7 +570,7 @@ function module.Init(category, connections)
 			GeneralEvents.Inventory:InvokeServer("Sell")
 		end).Inline = true
 		
-		do
+		do -- buy all preset gear
 			local gear = {"Arrows", "RifleAmmo", "SniperAmmo", "BIG Dynamite", "Health Potion"}
 			category:AddButton("Buy Max Gear", function()
 				for _,item in pairs(gear) do
@@ -578,42 +579,45 @@ function module.Init(category, connections)
 			end)
 		end
 		
-		local hopLocation = category:AddDropdown("Location", {"Fort Arthur", "Grayridge Bank"}, 1)
-		local locations = {
-			[1] = (game.Workspace.FortArthurSpawn1.CFrame * CFrame.new(0, 3, 0)).Position,
-			[2] = Vector3.new(1621, 121.5, 1580)
-		}
-		
-		local hopButton
-		hopButton = category:AddButton("Hop to", function()
-			if hopping then
-				hopping = false
-				hopButton.Text = "Hop to"
-			else
-				if plr.Character then
-					local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
-					if human and human.RootPart then
-						hopButton.Text = "Hopping..."
-						hopButton:Update()
-						hopping = true
-						local targetPos = locations[hopLocation.SelectedIndex]
-						local maxHopDistance = 20
-						local originalY = human.RootPart.Position.Y
-						while hopping and module.On and human.Health > 0 and (human.RootPart.Position - targetPos).Magnitude > maxHopDistance do
-							local nextHop = CFrame.new(Vector3.new(human.RootPart.Position.X, originalY, human.RootPart.Position.Z), targetPos) * CFrame.new(0, 0, -maxHopDistance)
-							human.RootPart.CFrame = nextHop
-							originalY = nextHop.Position.Y
-							wait(0.1)
+		do -- autohopping
+			local category = _G.SenHub:AddCategory("Auto-farm")
+			local hopLocation = category:AddDropdown("Location", {"Fort Arthur", "Grayridge Bank"}, 1)
+			local locations = {
+				[1] = (game.Workspace.FortArthurSpawn1.CFrame * CFrame.new(0, 3, 0)).Position,
+				[2] = Vector3.new(1621, 121.5, 1580)
+			}
+			
+			local hopButton
+			hopButton = category:AddButton("Hop to", function()
+				if hopping then
+					hopping = false
+					hopButton.Text = "Hop to"
+				else
+					if plr.Character then
+						local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
+						if human and human.RootPart then
+							hopButton.Text = "Hopping..."
+							hopButton:Update()
+							hopping = true
+							local targetPos = locations[hopLocation.SelectedIndex]
+							local maxHopDistance = 20
+							local originalY = human.RootPart.Position.Y
+							while hopping and module.On and human.Health > 0 and (human.RootPart.Position - targetPos).Magnitude > maxHopDistance do
+								local nextHop = CFrame.new(Vector3.new(human.RootPart.Position.X, originalY, human.RootPart.Position.Z), targetPos) * CFrame.new(0, 0, -maxHopDistance)
+								human.RootPart.CFrame = nextHop
+								originalY = nextHop.Position.Y
+								wait(0.1)
+							end
+							if hopping then
+								human.RootPart.CFrame = CFrame.new(targetPos)
+							end
+							hopping = false
+							hopButton.Text = "Hop to"
 						end
-						if hopping then
-							human.RootPart.CFrame = CFrame.new(targetPos)
-						end
-						hopping = false
-						hopButton.Text = "Hop to"
 					end
 				end
-			end
-		end)
+			end)
+		end
 	end
 	
 	local Christmas = game.Workspace:FindFirstChild("Christmas")
