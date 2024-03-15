@@ -1,4 +1,4 @@
-local Version = "1.9.10"
+local Version = "1.10.0"
 _G.MeltinENV = 0
 -- ENVIRONMENT: 0 = public, 1 = dev (local)
 
@@ -11,8 +11,11 @@ _G.MeltinENV = 0
 --loadstring(game:HttpGet("https://raw.githubusercontent.com/Babyhamsta/RBLX_Scripts/main/Universal/Bypasses.lua", true))()
 
 if _G.SenHub ~= nil then
+	repeat task.wait() until not _G.SenHubLoading
 	_G.SenHub:Destroy()
 end
+
+_G.SenHubLoading = true
 
 local isDev = _G.MeltinENV == 1
 
@@ -1381,3 +1384,5 @@ _G.SenHub.OnDestroy = function()
 	
 	SENHUB_RUNNING = false
 end
+
+_G.SenHubLoading = nil

@@ -164,13 +164,12 @@ function module.SetEnabled(state)
 						return
 					end
 				end
-				fovLine.Visible = false
-				fovCirc.Color = _G.COLOR3DEF.WHITE
 			else
 				fovCirc.Visible = false
-				fovLine.Visible = false
-				fovCirc.Color = _G.COLOR3DEF.WHITE
 			end
+			fovLine.Visible = false
+			fovCirc.Color = _G.COLOR3DEF.WHITE
+			_G.AIMBOT_CurrentTarget = nil
 		end)
 	elseif not state and module.Enabled then
 		fovCirc.Visible = false

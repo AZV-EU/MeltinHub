@@ -1282,7 +1282,7 @@ function module.New(title, startPosition)
 		if properties.OnDestroy ~= nil then
 			local f, err = pcall(properties.OnDestroy)
 			if not f then
-				warn(err)
+				warn("MeltinHub OnDestroy error:", err)
 			end
 		end
 		Categories = nil

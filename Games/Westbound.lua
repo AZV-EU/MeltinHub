@@ -8,12 +8,14 @@ local objects = {}
 function module.Init(category, connections)
 	local plr = game.Players.LocalPlayer
 	local PlayerScripts = plr:WaitForChild("PlayerScripts")
+	local PlayerInventory = plr:WaitForChild("Inventory")
 	local mouse = plr:GetMouse()
 	
 	local sharedModules = ReplicatedStorage:WaitForChild("SharedModules")
 	local generalEvents = ReplicatedStorage:WaitForChild("GeneralEvents")
 	
 	local animals = game.Workspace:WaitForChild("Animals")
+	local horses = game.Workspace:WaitForChild("Horses")
 	local shops = game.Workspace:WaitForChild("Shops")
 	
 	local GeneralEvents = {
@@ -35,6 +37,8 @@ function module.Init(category, connections)
 	local lassoTarget = states:WaitForChild("LassoTarget")
 	local hogtied = states:WaitForChild("Hogtied")
 	
+	local inventoryLimit = stats:WaitForChild("InventorySizeLevel"):WaitForChild("CurrentAmount")
+	
 	local mle = stateConfig:WaitForChild("MouseLockEnabled")
 	_G.IndexEmulator:SetKeyValue(mle, "Value", false)
 	_G.IndexEmulator:SetKeyValue(mle:WaitForChild("MouseRotateEnabled"), "Value", false)
@@ -53,7 +57,7 @@ function module.Init(category, connections)
 		end
 	end
 	
-	do
+	do -- anti-ragdoll
 		local ragdoll = require(sharedModules:WaitForChild("Ragdoll"))
 		if _G.OriginalRagdoll then
 			for key,func in pairs(_G.OriginalRagdoll) do
@@ -101,11 +105,18 @@ function module.Init(category, connections)
 	end
 	
 	do -- aimbot
-		local tool
-		_G.AIMBOT_CanUse = function()
-			if plr.Character then
-				tool = plr.Character:FindFirstChildWhichIsA("Tool")
-				return tool and tool:FindFirstChild("GunType")
+		_G.AIMBOT_Raycast_GetFilterDescendantsInstances = function()
+			return {game.Workspace.CurrentCamera, plr.Character, horses}
+		end
+		
+		do
+			local tool
+			_G.AIMBOT_CanUse = function()
+				if plr.Character then
+					tool = plr.Character:FindFirstChildWhichIsA("Tool")
+					return tool and tool:FindFirstChild("GunType")
+				end
+				return false
 			end
 		end
 		
@@ -128,6 +139,10 @@ function module.Init(category, connections)
 		local gunScripts = ReplicatedStorage:WaitForChild("GunScripts")
 		for gunName,gunData in pairs(require(gunScripts:WaitForChild("GunStats"))) do
 			gunData.AutoFire = true
+			gunData.ReloadSpeed = 0.1
+			gunData.equipTime = 0
+			gunData.Spread = 0
+			gunData.MaxShots = 1000
 		end
 		
 		local gunLocalModule = require(gunScripts:WaitForChild("GunLocalModule"))
@@ -173,40 +188,32 @@ function module.Init(category, connections)
 		end))
 	end
 	
-	local hijackFuncs = {}
 	local hijackedTools = {}
 	local function hijackTool(tool)
 		if tool:IsA("Tool") and not hijackedTools[tool] then
 			hijackedTools[tool] = true
 			
-			local equipped = tool.Parent == plr.Character
-			table.insert(connections, tool.Equipped:Connect(function()
+			local equipped = false
+			local function mouseAim()
 				equipped = true
-				local mouseRay, raycastHit
-				while task.wait() and equipped do
+				while task.wait() and equipped and module.On do
 					if _G.AimbotModule.Enabled and plr.Character and plr.Character.PrimaryPart then
-						--[[mouseRay = game.Workspace.CurrentCamera:ScreenPointToRay(mouse.X, mouse.Y)
-						raycastHit = _G.AIMBOT_Raycast(mouseRay.Origin, mouseRay.Direction * 1000)
-						if raycastHit then
-							plr.Character.PrimaryPart.CFrame = CFrame.new(plr.Character.PrimaryPart.Position, Vector3.new(raycastHit.Position.X, plr.Character.PrimaryPart.Position.Y, raycastHit.Position.Z))
-						else]]
+						if _G.AIMBOT_CurrentTarget then
+							plr.Character.PrimaryPart.CFrame = CFrame.new(plr.Character.PrimaryPart.Position, Vector3.new(_G.AIMBOT_CurrentTarget.Position.X, plr.Character.PrimaryPart.Position.Y, _G.AIMBOT_CurrentTarget.Position.Z))
+						else
 							plr.Character.PrimaryPart.CFrame = CFrame.new(plr.Character.PrimaryPart.Position, Vector3.new(mouse.Hit.Position.X, plr.Character.PrimaryPart.Position.Y, mouse.Hit.Position.Z))
-						--end
+						end
 					end
 				end
-			end))
+			end
+			if plr.Character and plr.Character.Parent and tool.Parent == plr.Character then
+				task.spawn(mouseAim)
+			end
 			
+			table.insert(connections, tool.Equipped:Connect(mouseAim))
 			table.insert(connections, tool.Unequipped:Connect(function()
 				equipped = false
 			end))
-			
-			local func = hijackFuncs[tool.Name]
-			if func then
-				local f, err = pcall(func, tool)
-				if not f then
-					warn("Failed to hijack tool:", err)
-				end
-			end
 		end
 	end
 	table.insert(connections, plr.Backpack.ChildAdded:Connect(hijackTool))
@@ -244,10 +251,6 @@ function module.Init(category, connections)
 	end
 	table.insert(connections, plr.CharacterAdded:Connect(setupCharacter))
 	
-	local autoSkin = category:AddCheckbox("Auto-skin")
-	autoSkin:SetChecked(true)
-	autoSkin.Inline = true
-	
 	local animalsList = {}
 	local function checkAnimals()
 		for k, animal in pairs(animals:GetChildren()) do
@@ -277,14 +280,14 @@ function module.Init(category, connections)
 	end))
 	checkAnimals()
 	
-	spawn(function()
-		while module.On and task.wait(.3) do
-			if autoSkin.Checked then
-				for animal, data in pairs(animalsList) do
-					if data and data.Humanoid and data.Humanoid.Health <= 0 and data.Humanoid.RootPart and
-						plr:DistanceFromCharacter(data.Humanoid.RootPart.Position) <= 10 then
-						GeneralEvents.SkinAnimal:FireServer(animal)
-					end
+	-- auto-skin
+	task.spawn(function()
+		while task.wait(.5) and module.On do
+			for animal, data in pairs(animalsList) do
+				if #PlayerInventory:GetChildren() >= inventoryLimit.Value then break end
+				if data and data.Humanoid and data.Humanoid.Health <= 0 and data.Humanoid.RootPart and
+					plr:DistanceFromCharacter(data.Humanoid.RootPart.Position) <= 10 then
+					GeneralEvents.SkinAnimal:FireServer(animal)
 				end
 			end
 		end
@@ -306,46 +309,7 @@ function module.Init(category, connections)
 		tl.TextStrokeTransparency = 0
 	end
 	
-	do
-		local function highlightChests()
-			for k,v in pairs(game.Workspace.ChestFolder:GetChildren()) do
-				if v:IsA("Model") and v.Name == "TreasureChest" and v.PrimaryPart then
-					if objects[v] ~= nil then
-						objects[v]:Destroy()
-					end
-					if not v.Opened.Value then
-						objects[v] = espGui:Clone()
-						objects[v].Parent = v
-						objects[v].Adornee = v
-						objects[v].TextLabel.Text = "Treasure Chest"
-						objects[v].TextLabel.TextColor3 = Color3.new(0.95, 0.95, 0)
-						connections[v] = v.Opened.Changed:Connect(highlightChests)
-					end
-				end
-			end
-		end
-		
-		local refreshChestsConn
-		category:AddCheckbox("Treasures", function(state)
-			if state then
-				highlightChests()
-				refreshChestsConn = game.Workspace.ChestFolder.ChildAdded:Connect(highlightChests)
-				table.insert(connections, refreshChestsConn)
-			else
-				if refreshChestsConn then refreshChestsConn:Disconnect() end
-				for k,v in pairs(game.Workspace.ChestFolder:GetChildren()) do
-					if objects[v] then
-						objects[v]:Destroy()
-					end
-					if connections[v] then
-						connections[v]:Disconnect()
-					end
-				end
-			end
-		end)
-	end
-	
-	do
+	do -- animals ESP
 		local function highlightAnimals()
 			for model, data in pairs(objects) do
 				if objects[model] and not objects[model].Parent then
@@ -372,7 +336,7 @@ function module.Init(category, connections)
 		end
 		
 		local refreshAnimalsConn
-		category:AddCheckbox("Animals", function(state)
+		category:AddCheckbox("Animals ESP", function(state)
 			if state then
 				highlightAnimals()
 				refreshAnimalsConn = game.Workspace.Animals.ChildAdded:Connect(function()
@@ -391,21 +355,75 @@ function module.Init(category, connections)
 			end
 		end).Inline = true
 	end
-		
-	do
-		local function freeYourself()
-			GeneralEvents.LassoEvents:FireServer("BreakFree")
+	
+	do -- treasures ESP
+		local function highlightChests()
+			for k,v in pairs(game.Workspace.ChestFolder:GetChildren()) do
+				if v:IsA("Model") and v.Name == "TreasureChest" and v.PrimaryPart then
+					if objects[v] ~= nil then
+						objects[v]:Destroy()
+					end
+					if not v.Opened.Value then
+						objects[v] = espGui:Clone()
+						objects[v].Parent = v
+						objects[v].Adornee = v
+						objects[v].TextLabel.Text = "Treasure Chest"
+						objects[v].TextLabel.TextColor3 = Color3.new(0.95, 0.95, 0)
+						connections[v] = v.Opened.Changed:Connect(highlightChests)
+					end
+				end
+			end
 		end
 		
+		local refreshChestsConn
+		category:AddCheckbox("Treasures ESP", function(state)
+			if state then
+				highlightChests()
+				refreshChestsConn = game.Workspace.ChestFolder.ChildAdded:Connect(highlightChests)
+				table.insert(connections, refreshChestsConn)
+			else
+				if refreshChestsConn then refreshChestsConn:Disconnect() end
+				for k,v in pairs(game.Workspace.ChestFolder:GetChildren()) do
+					if objects[v] then
+						objects[v]:Destroy()
+					end
+					if connections[v] then
+						connections[v]:Disconnect()
+					end
+				end
+			end
+		end)
+	end
+	
+	do -- auto-trash
+		local autoTrash = category:AddCheckbox("Auto-trash")
+		autoTrash:SetChecked(true)
+		autoTrash.Inline = true
+		
+		local function filterTrash(item)
+			if not item or not item:IsA("IntValue") then return end
+			task.wait(.25)
+			if item.Value < 50 then
+				GeneralEvents.Inventory:InvokeServer("Drop", item)
+			end
+		end
+		for _,item in pairs(PlayerInventory:GetChildren()) do
+			filterTrash(item)
+		end
+		
+		table.insert(connections, PlayerInventory.ChildAdded:Connect(filterTrash))
+	end
+	
+	do
 		local freeYourselfConn
 		category:AddCheckbox("Auto-free", function(state)
 			if state then
-				freeYourself()
+			GeneralEvents.LassoEvents:FireServer("BreakFree")
 				freeYourselfConn = lassod.Changed:Connect(function()
 					if lassod.Value then
 						task.wait(.1)
 						if lassod.Value or hogtied.Value then
-							freeYourself()
+							GeneralEvents.LassoEvents:FireServer("BreakFree")
 						end
 					end
 				end)
@@ -416,7 +434,7 @@ function module.Init(category, connections)
 		end):SetChecked(true)
 	end
 	
-	do
+	do -- misc
 		local Safes = {}
 		for k,v in pairs(game.Workspace:GetChildren()) do
 			if v:IsA("Model") and v.Name == "Safe" and v:FindFirstChild("BankLocation") then
@@ -534,27 +552,6 @@ function module.Init(category, connections)
 			end
 		end)
 		
-		--[[
-		local teleporting = false
-		category:AddButton("Sell inventory", function()
-			if teleporting then return end
-			if plr.Character and plr.Character.PrimaryPart then
-				local store = shops:FindFirstChild("OutlawGeneralStore2")
-				if store and store.PrimaryPart then
-					teleporting = true
-					local original = plr.Character.PrimaryPart.Position
-					for i = 1,5 do
-						_G.TeleportPlayerTo(store.PrimaryPart.Position)
-						GeneralEvents.Inventory:InvokeServer("Sell")
-						task.wait(.1)
-					end
-					_G.TeleportPlayerTo(original)
-					teleporting = false
-				end
-			end
-		end).Inline = true
-		]]
-		
 		category:AddButton("Sell inventory", function()
 			GeneralEvents.Inventory:InvokeServer("Sell")
 		end).Inline = true
@@ -587,13 +584,13 @@ function module.Init(category, connections)
 						hopButton:Update()
 						hopping = true
 						local targetPos = locations[hopLocation.SelectedIndex]
-						local maxHopDistance = 30
+						local maxHopDistance = 20
 						local originalY = human.RootPart.Position.Y
 						while hopping and module.On and human.Health > 0 and (human.RootPart.Position - targetPos).Magnitude > maxHopDistance do
 							local nextHop = CFrame.new(Vector3.new(human.RootPart.Position.X, originalY, human.RootPart.Position.Z), targetPos) * CFrame.new(0, 0, -maxHopDistance)
 							human.RootPart.CFrame = nextHop
 							originalY = nextHop.Position.Y
-							wait(0.05)
+							wait(0.1)
 						end
 						if hopping then
 							human.RootPart.CFrame = CFrame.new(targetPos)
