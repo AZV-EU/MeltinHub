@@ -8,7 +8,7 @@ function module.Init(category, connections)
 	
 	local Setting = game.Workspace:WaitForChild("Setting")
 	for _,v in pairs(Setting:WaitForChild("VisualScene"):GetChildren()) do
-		if v.Name == "Center" then
+		if v.Name ~= "Water" then
 			v:Destroy()
 		end
 	end
@@ -17,6 +17,7 @@ function module.Init(category, connections)
 		v.CanTouch = false
 	end
 	
+	_G.AIMBOT_AimFunc = nil
 	_G.AIMBOT_CheckLoS = function(target)
 		if target and target:FindFirstChild("Head") and plr:DistanceFromCharacter(target.Head.Position) <= 400 then
 			return true, nil, target.Head
@@ -37,23 +38,14 @@ function module.Init(category, connections)
 		end
 	end
 	
-	_G.AIMBOT_AimFunc = function()
+	table.insert(connections, RunService.Stepped:Connect(function()
 		if _G.AIMBOT_CurrentTarget then
 			_G.MouseEmulator:TargetPart(_G.AIMBOT_CurrentTarget)
 			_G.MouseEmulator:TakeMouseControl()
 		else
 			_G.MouseEmulator:FreeMouseControl()
 		end
-	end
-	
-	_G.MethodEmulator:SetMethodOverride(RE, "FireServer", function(self, orig, ...)
-		print(self, orig, ...)
-		local msgType = ...
-		if _G.AIMBOT_CurrentTarget and msgType and msgType == "shootRifle" then
-			return orig(self, "shootRifle", "hit", {_G.AIMBOT_CurrentTarget})
-		end
-		return orig(self, ...)
-	end)
+	end))
 	
 	category:AddButton("Teleport to Harbour", function()
 		RE:FireServer("Teleport", {"Harbour", ""})
@@ -65,7 +57,7 @@ function module.Init(category, connections)
 			tool = plr.Character:FindFirstChildWhichIsA("Tool")
 			if tool and not gp and input.UserInputType == Enum.UserInputType.MouseButton1 then
 				shooting = true
-				while task.wait(.2) and tool and shooting and module.On do
+				while task.wait(.1) and tool and shooting and module.On do
 					tool:Activate()
 				end
 				shooting = false
@@ -105,7 +97,18 @@ function module.Init(category, connections)
 						end
 						local constants = debug.getconstants(func)
 						if #constants >= 44 and constants[15] == "shootRifle" then
-							pcall(function() debug.setconstant(func, 44, 0) end)
+							local override = {}
+							function override:FireServer(...)
+								if _G.AIMBOT_CurrentTarget then
+									return RE:FireServer("shootRifle", "hit", {_G.AIMBOT_CurrentTarget})
+								end
+								RE:FireServer(...)
+							end
+							local f, err = pcall(function()
+								debug.setconstant(func, 44, 0)
+								debug.setupvalue(func, 9, override)
+							end)
+							if not f then warn(err) end
 						end
 					end
 				end
