@@ -421,7 +421,7 @@ function module.Init(category, connections)
 			end
 		end
 		
-		throwAll = Category:AddCheckbox("Trash all")
+		throwAll = category:AddCheckbox("Trash all")
 		autoTrash = category:AddCheckbox("Auto-trash", function(state) autoTrash.Inline = state throwAll:SetVisible(state) end)
 		autoTrash:SetChecked(true)
 		autoTrash.Inline = true
