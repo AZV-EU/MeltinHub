@@ -293,7 +293,6 @@ function module.Init(category, connections)
 			local function OnEquipped()
 				equipped = true
 				
-				--[[
 				if not weaponsData[tool] then
 					for _,func in pairs(getfunctions(gunLocalModule)) do
 						local gunTbl = getupvalue(func, 1)
@@ -306,8 +305,10 @@ function module.Init(category, connections)
 				
 				local weaponData = weaponsData[tool]
 				if weaponData then
-					firesignal(weaponData.AmmoVal.Changed)
-				end]]
+					if weaponData.AmmoVal and weaponData.AmmoVal:FindFirstChild("Clip") then
+						weaponData.Shots = weaponData.AmmoVal.Clip.Value
+					end
+				end
 				
 				while task.wait() and equipped and module.On do
 					if plr.Character and plr.Character.PrimaryPart then
