@@ -42,6 +42,15 @@ Hook = hookmetamethod(mouse, "__index", function(Self, Key)
 			return emulatedPart
 		elseif Key == "Hit" then
 			return emulatedHit
+		else
+			local simulatedPos, inBounds = game.Workspace.CurrentCamera:WorldToScreenPoint(emulatedHit.Position)
+			if inBounds then
+				if Key == "X" then
+					return simulatedPos.X
+				elseif Key == "Y" then
+					return simulatedPos.Y
+				end
+			end
 		end
     end
 

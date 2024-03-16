@@ -1,24 +1,22 @@
 local module = {
-	GameName = "Murder Mystery 2",
-	ModuleVersion = "1.0"
+	On = false
 }
 
 -- fart id: 7914322871
-
-local plr = game.Players.LocalPlayer
-local moduleOn = true
 
 function module.PreInit()
 	
 end
 
 function module.Init(category, connections)
-	local UserInputService = game:GetService("UserInputService")
-	local RunService = game:GetService("RunService")
-	local Remotes = game.ReplicatedStorage:WaitForChild("Remotes")
+	local plr = game.Players.LocalPlayer
+	
+	local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 	local GetDataRemote = Remotes:WaitForChild("Extras"):WaitForChild("GetData")
 	local PlaySongRemote = Remotes:WaitForChild("Inventory"):WaitForChild("PlaySong")
 
+	local dataPing = _G.SafeGetService("Stats").Network.ServerStatsItem["Data Ping"]
+	
 	category:AddButton("Take Gun", function()
 		local gunDrop = game.Workspace:FindFirstChild("GunDrop", true)
 		if gunDrop then
@@ -47,7 +45,36 @@ function module.Init(category, connections)
 		end
 	end)
 	
-	local autoAim = category:AddCheckbox("Sheriff auto-aim")
+	local autoAim
+	autoAim = category:AddCheckbox("Sheriff auto-aim", function(state)
+		if state then
+			task.spawn(function()
+				local found, ping, los, raycast, part
+				while task.wait() and autoAim.Checked and module.On do
+					found = false
+					ping = dataPing:GetValue() * 0.001
+					for k,v in pairs(game.Players:GetPlayers()) do
+						if v.Character and (v.Backpack:FindFirstChild("Knife") or v.Character:FindFirstChild("Knife")) then
+							los, raycast, part = _G.AIMBOT_CheckLoS(murderer)
+							if los and part then
+								found = true
+								_G.MouseEmulator:TargetPart(part)
+								_G.MouseEmulator:SetHit(CFrame.new(part.Position * (part.AssemblyLinearVelocity * ping)))
+								_G.MouseEmulator:TakeMouseControl()
+								break
+							end
+						end
+					end
+					if not found then
+						_G.MouseEmulator:FreeMouseControl()
+					end
+				end
+				_G.MouseEmulator:FreeMouseControl()
+			end)
+		else
+			_G.MouseEmulator:FreeMouseControl()
+		end
+	end)
 	autoAim:SetChecked(true)
 	local autoKillAll = category:AddCheckbox("Murderer auto-kill")
 	--local autoCollectCoins = category:AddCheckbox("Auto-collect coins")
@@ -98,31 +125,6 @@ function module.Init(category, connections)
 		end
 	end
 	
-	table.insert(connections, UserInputService.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or inputData.UserInputType == Enum.UserInputType.Touch then
-			if autoAim.Checked then
-				local murderer = nil
-				for k,v in pairs(game.Players:GetPlayers()) do
-					if v.Character and (v.Backpack:FindFirstChild("Knife") or v.Character:FindFirstChild("Knife")) then
-						murderer = v.Character
-					end
-				end
-				if murderer then
-					local los, raycast, part = _G.AIMBOT_CheckLoS(murderer)
-					local remote = plr.Character:FindFirstChild("ShootGun", true)
-					if los and remote then
-						remote:InvokeServer(1, part.Position, "AH")
-					end
-				end
-			else
-				local remote = plr.Character:FindFirstChild("ShootGun", true)
-				if remote then
-					remote:InvokeServer(1, plr:GetMouse().Hit.Position, "AH")
-				end
-			end
-		end
-	end))
-	
 	for k,v in pairs(game.Workspace:GetChildren()) do
 		if v:IsA("Model") and v:FindFirstChild("GlitchProof") then
 			v.GlitchProof:Destroy()
@@ -147,7 +149,7 @@ function module.Init(category, connections)
 		end
 	end))
 	
-	table.insert(connections, game:GetService("ReplicatedStorage").Remotes.Gameplay.RoundStart.OnClientEvent:Connect(function(...)
+	table.insert(connections, ReplicatedStorage.Remotes.Gameplay.RoundStart.OnClientEvent:Connect(function(...)
 		task.wait(2)
 		_G.ESPModule_Update()
 	end))
@@ -170,9 +172,8 @@ function module.Init(category, connections)
 	end, 4)
 	
 	if UserInputService.TouchEnabled then
-		print("applying mobile fix")
-		table.insert(connections, UserInputService.InputBegan:Connect(function(inputData)
-			if inputData.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+		table.insert(connections, UserInputService.InputBegan:Connect(function(input, gp)
+			if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
 				if plr and plr.Character then
 					local knife = plr.Character:FindFirstChild("Knife")
 					if knife and knife:FindFirstChild("Stab") then
@@ -184,9 +185,8 @@ function module.Init(category, connections)
 	end
 	
 	task.spawn(function()
-		while task.wait(1) and moduleOn do
+		while task.wait(1) and module.On do
 			if autoKillAll.Checked then
-				
 				if plr and plr.Character then
 					local knife = plr.Character:FindFirstChild("Knife")
 					if knife then
@@ -233,7 +233,6 @@ function module.Init(category, connections)
 end
 
 function module.Shutdown()
-	moduleOn = false
 end
 
 return module
