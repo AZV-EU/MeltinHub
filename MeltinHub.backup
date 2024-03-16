@@ -1,4 +1,4 @@
-local Version = "1.10.3"
+local Version = "1.10.3a"
 _G.MeltinENV = 1
 
 -- ENVIRONMENT: 0 = public, 1 = dev (local)
@@ -1343,7 +1343,10 @@ if repository[game.GameId] then
 	end
 end
 
+local destroyed = false
 _G.SenHub.OnDestroy = function()
+	if destroyed then return end
+	destroyed = true
 	print("MeltinHub shutting down")
 	--_G.StopScriptSearch()
 	

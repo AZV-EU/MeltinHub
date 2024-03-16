@@ -15,7 +15,7 @@ end
 
 _G.AIMBOT_FireFunc = nil -- should accept: from (vector3), to (vector3)
 local defaultRaycastParams = RaycastParams.new()
-defaultRaycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+defaultRaycastParams.FilterType = Enum.RaycastFilterType.Exclude
 defaultRaycastParams.IgnoreWater = true
 _G.AIMBOT_Raycast_GetFilterDescendantsInstances = function()
 	return {game.Workspace.CurrentCamera, plr.Character}
@@ -71,7 +71,7 @@ local function GetValidTargets()
 					pos, inBounds = game.Workspace.CurrentCamera:WorldToScreenPoint(human.RootPart.Position)
 					dist = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
 					if inBounds and (module.Mode == 1 or (module.Mode == 2 and dist < module.FOV)) then
-						table.insert(valid, {v, human.RootPart.Position, dist, pos})
+						table.insert(valid, {v.Character, human.RootPart.Position, dist, pos})
 					end
 				end
 			end
@@ -118,7 +118,6 @@ do
 	end
 end
 
-_G.AIMBOT_AimMethod = 1 -- 1: aim only while holding right-click, 2: always aim as long as there's a valid target
 _G.AIMBOT_AimFunc = function()
 	if _G.AIMBOT_CurrentTarget then
 		game.Workspace.CurrentCamera.CFrame = CFrame.new(game.Workspace.CurrentCamera.CFrame.Position, _G.AIMBOT_CurrentTarget.Position)
@@ -156,7 +155,7 @@ function module.SetEnabled(state)
 						fovLine.To = Vector2.new(aimPos.X, aimPos.Y + 36)
 						fovCirc.Color = _G.COLOR3DEF.GREEN
 						fovLine.Visible = true
-						if _G.AIMBOT_AimFunc and ((_G.AIMBOT_AimMethod == 1 and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2)) or _G.AIMBOT_AimMethod == 2) then
+						if _G.AIMBOT_AimFunc then
 							_G.AIMBOT_AimFunc()
 						end
 						if module.Autofire and _G.AIMBOT_FireFunc then

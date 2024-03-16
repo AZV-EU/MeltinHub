@@ -32,7 +32,8 @@ function emulator:Reset()
 end
 
 local OriginalFunc
-OriginalFunc = hookmetamethod(game, "__namecall", newcclosure(function(Self, ...)
+-- newcclosure()
+OriginalFunc = hookmetamethod(game, "__namecall", function(Self, ...)
     if not checkcaller() then
 		local NamecallMethod = getnamecallmethod()
 		
@@ -47,6 +48,6 @@ OriginalFunc = hookmetamethod(game, "__namecall", newcclosure(function(Self, ...
     end
 
     return OriginalFunc(Self, ...)
-end))
+end)
 
 return emulator

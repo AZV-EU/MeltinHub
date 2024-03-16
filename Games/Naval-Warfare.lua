@@ -6,12 +6,49 @@ function module.Init(category, connections)
 	local plr = game.Players.LocalPlayer
 	local RE = ReplicatedStorage:WaitForChild("Event")
 	
-	_G.AIMBOT_LoSMaxDistance = 400
+	local Setting = game.Workspace:WaitForChild("Setting")
+	for _,v in pairs(Setting:WaitForChild("VisualScene"):GetChildren()) do
+		if v.Name == "Center" then
+			v:Destroy()
+		end
+	end
 	
-	_G.AIMBOT_AimFunc = nil
+	for _,v in pairs(Setting:WaitForChild("SeaFloor"):GetChildren()) do
+		v.CanTouch = false
+	end
+	
+	_G.AIMBOT_CheckLoS = function(target)
+		if target and target:FindFirstChild("Head") and plr:DistanceFromCharacter(target.Head.Position) <= 400 then
+			return true, nil, target.Head
+		end
+	end
+	
+	do
+		local targets
+		_G.AIMBOT_GetTargets = function()
+			targets = {}
+			for _,v in pairs(game.Players:GetPlayers()) do
+				if v ~= plr and v.Character and v.Character.Parent and not plr:IsFriendsWith(v.UserId) and
+					_G.ESPModule_Database.Storages["Enemies"].Rule(v) then
+					table.insert(targets, v.Character)
+				end
+			end
+			return targets
+		end
+	end
+	
+	_G.AIMBOT_AimFunc = function()
+		if _G.AIMBOT_CurrentTarget then
+			_G.MouseEmulator:TargetPart(_G.AIMBOT_CurrentTarget)
+			_G.MouseEmulator:TakeMouseControl()
+		else
+			_G.MouseEmulator:FreeMouseControl()
+		end
+	end
 	
 	_G.MethodEmulator:SetMethodOverride(RE, "FireServer", function(self, orig, ...)
-		local msgType, isHit, whatHit = ...
+		print(self, orig, ...)
+		local msgType = ...
 		if _G.AIMBOT_CurrentTarget and msgType and msgType == "shootRifle" then
 			return orig(self, "shootRifle", "hit", {_G.AIMBOT_CurrentTarget})
 		end
@@ -68,7 +105,7 @@ function module.Init(category, connections)
 						end
 						local constants = debug.getconstants(func)
 						if #constants >= 44 and constants[15] == "shootRifle" then
-							debug.setconstant(shootFunc, 44, 0)
+							debug.setconstant(func, 44, 0)
 						end
 					end
 				end
