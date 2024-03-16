@@ -34,7 +34,7 @@ do
 	_G.AIMBOT_GetTargets = function()
 		targets = {}
 		for _,v in pairs(game.Players:GetPlayers()) do
-			if v ~= plr and v.Character and v.Character.Parent and not plr:IsFriendsWith(v.UserId) and
+			if v ~= plr and v.Character and v.Character.Parent and not v:FindFirstChildWhichIsA("ForceField") and not plr:IsFriendsWith(v.UserId) and
 				_G.ESPModule_Database.Storages["Enemies"].Rule(v) then
 				table.insert(targets, v.Character)
 			end
@@ -51,14 +51,12 @@ local function GetValidTargets()
 	local mousePos = Vector2.new(Mouse.X, Mouse.Y)
 	if _G.AIMBOT_GetTargets then
 		for _,v in pairs(_G.AIMBOT_GetTargets()) do
-			if not v:FindFirstChildWhichIsA("ForceField") then
-				human = v:FindFirstChildWhichIsA("Humanoid")
-				if human and human.Health > 0 and human.RootPart then
-					pos, inBounds = game.Workspace.CurrentCamera:WorldToScreenPoint(human.RootPart.Position)
-					dist = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
-					if inBounds and (module.Mode == 1 or (module.Mode == 2 and dist < module.FOV)) then
-						table.insert(valid, {v, human.RootPart.Position, dist, pos})
-					end
+			human = v:FindFirstChildWhichIsA("Humanoid")
+			if human and human.Health > 0 and human.RootPart then
+				pos, inBounds = game.Workspace.CurrentCamera:WorldToScreenPoint(human.RootPart.Position)
+				dist = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
+				if inBounds and (module.Mode == 1 or (module.Mode == 2 and dist < module.FOV)) then
+					table.insert(valid, {v, human.RootPart.Position, dist, pos})
 				end
 			end
 		end

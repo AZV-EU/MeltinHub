@@ -99,8 +99,14 @@ function module.Init(category, connections)
 						if #constants >= 44 and constants[15] == "shootRifle" then
 							local override = {}
 							function override:FireServer(...)
-								if _G.AIMBOT_CurrentTarget then
-									return RE:FireServer("shootRifle", "hit", {_G.AIMBOT_CurrentTarget})
+								local action = ...
+								if _G.AIMBOT_CurrentTarget and action and action == "shootRifle" then
+									RE:FireServer("shootRifle", "", {_G.AIMBOT_CurrentTarget})
+									local human = _G.AIMBOT_CurrentTarget.Parent:FindFirstChild("Humanoid")
+									if human then
+										RE:FireServer("shootRifle", "hit", { human })
+									end
+									return
 								end
 								RE:FireServer(...)
 							end

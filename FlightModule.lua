@@ -78,8 +78,9 @@ function module.SetFling(state)
 					end
 				end)
 				
-				resetConn = human.Died:Connect(function()
+				resetConn = human.Died:Once(function()
 					module.SetFling(false)
+					resetConn = nil
 				end)
 			end
 		end
@@ -187,8 +188,9 @@ function module.SetEnabled(state)
 		
 		local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
 		if human then
-			respawnConn = human.Died:Connect(function()
+			respawnConn = human.Died:Once(function()
 				resetFlight()
+				respawnConn = nil
 			end)
 		end
 	elseif not state and module.Enabled then
