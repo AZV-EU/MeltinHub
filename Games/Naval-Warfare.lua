@@ -105,7 +105,7 @@ function module.Init(category, connections)
 						end
 						local constants = debug.getconstants(func)
 						if #constants >= 44 and constants[15] == "shootRifle" then
-							debug.setconstant(func, 44, 0)
+							pcall(function() debug.setconstant(func, 44, 0) end)
 						end
 					end
 				end
