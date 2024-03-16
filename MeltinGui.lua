@@ -270,7 +270,7 @@ function module.New(title, startPosition)
 		Visible = true,
 		Hidden = false,
 		Size = DefaultSize,
-		Position = startPosition or UDim2.fromOffset(game.Workspace.CurrentCamera.ViewportSize.X - DefaultSize.X.Offset - 10, game.Workspace.CurrentCamera.ViewportSize.Y - (DefaultSize.Y.Offset/2)),
+		Position = startPosition or UDim2.fromOffset(game.Workspace.CurrentCamera.ViewportSize.X - DefaultSize.X.Offset - 25, game.Workspace.CurrentCamera.ViewportSize.Y * .65 - (DefaultSize.Y.Offset/2)),
 		OnDestroy = nil,
 		ScreenGui = screenGui
 	}

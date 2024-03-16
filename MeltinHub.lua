@@ -1,4 +1,4 @@
-local Version = "1.10.2c"
+local Version = "1.10.2d"
 _G.MeltinENV = 0
 
 -- ENVIRONMENT: 0 = public, 1 = dev (local)
