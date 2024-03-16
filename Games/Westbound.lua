@@ -141,6 +141,7 @@ function module.Init(category, connections)
 	_G.IndexEmulator:SetKeyValue(mle, "Value", false)
 	_G.IndexEmulator:SetKeyValue(mle:WaitForChild("MouseRotateEnabled"), "Value", false)
 	_G.IndexEmulator:SetKeyValue(settings:WaitForChild("AimLock"), "Value", false)
+	_G.IndexEmulator:SetKeyValue(states:WaitForChild("BackpackDisabled"), "Value", false)
 	
 	do -- buggy context streaming override, let roblox handle performance
 		local gs = PlayerScripts:WaitForChild("GeneralStreaming")
