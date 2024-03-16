@@ -292,12 +292,16 @@ function module.Init(category, connections)
 			local equipped = false
 			local function OnEquipped()
 				equipped = true
-				
+				task.wait(.33)
 				if not weaponsData[tool] then
 					for _,func in pairs(getfunctions(gunLocalModule)) do
-						local gunTbl = getupvalue(func, 1)
-						if gunTbl and type(gunTbl) == "table" and gunTbl.Tool and gunTbl.Tool == tool then
-							weaponsData[tool] = gunTbl
+						pcall(function()
+							local gunTbl = getupvalue(func, 1)
+							if gunTbl and type(gunTbl) == "table" and gunTbl.Tool and gunTbl.Tool == tool then
+								weaponsData[tool] = gunTbl
+							end
+						end)
+						if weaponsData[tool] ~= nil then
 							break
 						end
 					end

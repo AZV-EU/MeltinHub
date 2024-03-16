@@ -1,4 +1,4 @@
-local Version = "1.10.2g"
+local Version = "1.10.3"
 _G.MeltinENV = 0
 
 -- ENVIRONMENT: 0 = public, 1 = dev (local)
@@ -210,7 +210,7 @@ function _G.Stringify(obj, no_quotas)
 				end
 				return _G.Stringify(string.format("function %s(%s) end", funcInfo.name, table.concat(args, ", ")), true)
 			else
-				return _G.Stringify(string.format("function: %s (%d args)", funcInfo.name, funcInfo.numparams), no_quotas)
+				return _G.Stringify(string.format("%s (%d args)", tostring(obj), funcInfo.numparams), no_quotas)
 			end
 		end
 	elseif type(obj) == "userdata" and typeof(obj) ~= "EnumItem" then
@@ -394,17 +394,19 @@ getgenv().getfunctions = function(script)
 			end
 		end
 	end
-	local env = getsenv(script)
-	if env then
-		for k,v in pairs(env) do
-			if type(v) == "function" then
-				if getinfo(v).short_src ~= "" and not visited[v] then
-					visited[v] = true
-					table.insert(funcs, v)
+	pcall(function()
+		local env = getsenv(script)
+		if env then
+			for k,v in pairs(env) do
+				if type(v) == "function" then
+					if getinfo(v).short_src ~= "" and not visited[v] then
+						visited[v] = true
+						table.insert(funcs, v)
+					end
 				end
 			end
 		end
-	end
+	end)
 	return funcs
 end
 

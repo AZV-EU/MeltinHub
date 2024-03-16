@@ -98,6 +98,7 @@ _G.AIMBOT_FireSource = function()
 end
 
 do
+	_G.AIMBOT_LoSMaxDistance = 1000
 	local result, losDir, source
 	_G.AIMBOT_CheckLoS = function(target)
 		if not target or not plr or not plr.Character then return end
@@ -105,7 +106,7 @@ do
 		if not source then return end
 		for k,v in ipairs(_G.AIMBOT_GetCastParts(target)) do
 			losDir = (v.Position - source)
-			if losDir.Magnitude <= 1000 then
+			if losDir.Magnitude <= _G.AIMBOT_LoSMaxDistance then
 				result = _G.AIMBOT_Raycast(
 					source,
 					losDir.Unit * (losDir.Magnitude * 2))

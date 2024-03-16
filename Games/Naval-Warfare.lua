@@ -1,113 +1,96 @@
 local module = {
-	GameName = "Naval Warfare",
-	ModuleVersion = "1.0"
+	On = false
 }
 
-local plr = game.Players.LocalPlayer
-if not plr then return module end
-local mouse = plr:GetMouse()
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-
-local connections = {}
-local tools = {}
-
-local remote = game.ReplicatedStorage:WaitForChild("Event")
-
-local function findNearestToMousePoint()
-	local closest, closestDistance = nil, 0
-	local mousePos = Vector2.new(mouse.X, mouse.Y)
-	for k,v in pairs(game.Players:GetPlayers()) do
-		if v ~= plr and v.Team ~= plr.Team and v.Character then
-			local head = v.Character:FindFirstChild("Head")
-			local humanoid = v.Character:FindFirstChild("Humanoid")
-			if head and humanoid and humanoid.Health > 0 then
-				local pos = game.Workspace.CurrentCamera:WorldToScreenPoint(head.Position)
-				if pos.Z > 0 then
-					local targetPos = Vector2.new(pos.X, pos.Y)
-					local distance = (targetPos - mousePos).Magnitude
-					if not closest or distance < closestDistance then
-						closest = humanoid
-						closestDistance = distance
+function module.Init(category, connections)
+	local plr = game.Players.LocalPlayer
+	local RE = ReplicatedStorage:WaitForChild("Event")
+	
+	_G.AIMBOT_LoSMaxDistance = 400
+	
+	_G.AIMBOT_AimFunc = nil
+	
+	_G.MethodEmulator:SetMethodOverride(RE, "FireServer", function(self, orig, ...)
+		local msgType, isHit, whatHit = ...
+		if _G.AIMBOT_CurrentTarget and msgType and msgType == "shootRifle" then
+			return orig(self, "shootRifle", "hit", {_G.AIMBOT_CurrentTarget})
+		end
+		return orig(self, ...)
+	end)
+	
+	category:AddButton("Teleport to Harbour", function()
+		RE:FireServer("Teleport", {"Harbour", ""})
+	end)
+	
+	do
+		local tool, shooting = false
+		table.insert(connections, UserInputService.InputBegan:Connect(function(input, gp)
+			tool = plr.Character:FindFirstChildWhichIsA("Tool")
+			if tool and not gp and input.UserInputType == Enum.UserInputType.MouseButton1 then
+				shooting = true
+				while task.wait(.2) and tool and shooting and module.On do
+					tool:Activate()
+				end
+				shooting = false
+			end
+		end))
+		table.insert(connections, UserInputService.InputEnded:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 then
+				shooting = false
+			end
+		end))
+	end
+	
+	local hijackedTools = {}
+	local function setupWeapon(tool)
+		if tool:IsA("Tool") and not hijackedTools[tools] then
+			hijackedTools[tool] = true
+			
+			if tool.Name == "M1 Garand" then
+				local ts = tool:FindFirstChild("TriggerScript")
+				if ts then
+					local funcs = getfunctions(ts)
+					if #funcs == 0 then -- script not running, equip tool to force
+						if plr.Character then
+							local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
+							if human then
+								human:EquipTool(tool)
+								task.wait(.5)
+								funcs = getfunctions(ts)
+							end
+						end
+					end
+					for _,func in pairs(funcs) do
+						for idx,upval in pairs(debug.getupvalues(func)) do
+							if type(upval) == "function" and debug.getinfo(upval).name == "reload" then
+								debug.setupvalue(func, idx, function() end)
+							end
+						end
+						local constants = debug.getconstants(func)
+						if #constants >= 44 and constants[15] == "shootRifle" then
+							debug.setconstant(shootFunc, 44, 0)
+						end
 					end
 				end
 			end
 		end
 	end
-	return closest
-end
-
-local function hijackTool(tool)
-	if tool.Name == "M1 Garand" and not tools[tool] then
-		warn("Hijacking M1 Garand")
-		tool:WaitForChild("TriggerScript").Disabled = true
-		local handle = tool:WaitForChild("Handle")
-		local fireSound = handle:WaitForChild("FireSound")
-		local muzzleFlash = tool:WaitForChild("Flare"):WaitForChild("MuzzleFlash")
-		local equipped = false
-		table.insert(connections, tool.Equipped:Connect(function()
-			warn("Garand Equip")
-			equipped = true
-			UserInputService.InputBegan:Connect(function(input, gameProcessed)
-				if input.UserInputType == Enum.UserInputType.MouseButton1 then
-					while wait(.1) and equipped and tools[tool] and
-						UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
-						
-						fireSound:Play()
-						muzzleFlash.Enabled = true
-						local nearestHumanoid = findNearestToMousePoint()
-						if nearestHumanoid then
-							remote:FireServer("shootRifle", "", {nearestHumanoid.Parent:FindFirstChild("Head")})
-						else
-							remote:FireServer("shootRifle", "", {})
-						end
-						if nearestHumanoid then
-							remote:FireServer("shootRifle", "hit", { nearestHumanoid })
-						end
-						muzzleFlash.Enabled = false
-						
-					end
-				end
-			end)
-		end))
-		table.insert(connections, tool.Unequipped:Connect(function()
-			warn("Garand Unequip")
-			equipped = false
-		end))
-		tools[tool] = true
-	end
-end
-
-function module.Init(category)
-	tools = {}
-	table.insert(connections, plr.CharacterAdded:Connect(function()
-		tools = {}
-		for k,v in pairs(plr.Backpack:GetChildren()) do
-			if v:IsA("Tool") then
-				hijackTool(v)
-			end
+	local function onRespawn(chr)
+		hijackedTools = {}
+		repeat task.wait() until chr.PrimaryPart
+		task.wait(1)
+		for _,v in pairs(plr.Backpack:GetChildren()) do
+			setupWeapon(v)
 		end
-	end))
-	table.insert(connections, plr.Backpack.ChildAdded:Connect(function(tool)
-		if tool:IsA("Tool") then
-			hijackTool(tool)
-		end
-	end))
-	for k,v in pairs(plr.Backpack:GetChildren()) do
-		if v:IsA("Tool") then
-			hijackTool(v)
+		for _,v in pairs(plr.Character:GetChildren()) do
+			setupWeapon(v)
 		end
 	end
+	onRespawn(plr.Character)
+	table.insert(connections, plr.CharacterAdded:Connect(onRespawn))
 end
 
 function module.Shutdown()
-	for k,v in pairs(connections) do
-		if v then
-			v:Disconnect()
-		end
-	end
-	tools = {}
-	RunService:UnbindFromRenderStep("autoaim")
 end
 
 return module
