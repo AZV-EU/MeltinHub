@@ -1,4 +1,4 @@
-local Version = "1.10.2b"
+local Version = "1.10.2c"
 _G.MeltinENV = 0
 
 -- ENVIRONMENT: 0 = public, 1 = dev (local)
@@ -788,7 +788,7 @@ if not _G.ESPModule then warn("Could not load esp module") return end
 _G.FlightModule = loadCoreModule(BaseUrl .. "FlightModule.lua", "Flight Module")
 if not _G.FlightModule then warn("Could not load flight module") return end
 
-_G.SenHub = mg.New("MeltinHub v" .. tostring(Version) .. (isDev and " [DEV]" or ""), UserInputService.TouchEnabled and UDim2.fromOffset(0, 0) or nil)
+_G.SenHub = mg.New("MeltinHub v" .. tostring(Version) .. (isDev and " [DEV]" or ""))
 if gethgui then
 	_G.SenHub.Parent = gethgui()
 else
