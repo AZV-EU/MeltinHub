@@ -55,7 +55,7 @@ function module.Init(category, connections)
 					ping = dataPing:GetValue() * 0.001
 					for k,v in pairs(game.Players:GetPlayers()) do
 						if v.Character and (v.Backpack:FindFirstChild("Knife") or v.Character:FindFirstChild("Knife")) then
-							los, raycast, part = _G.AIMBOT_CheckLoS(murderer)
+							los, raycast, part = _G.AIMBOT_CheckLoS(v.Character)
 							if los and part then
 								found = true
 								_G.MouseEmulator:TargetPart(part)

@@ -100,7 +100,7 @@ end
 do
 	local result, losDir, source
 	_G.AIMBOT_CheckLoS = function(target)
-		if not plr or not plr.Character then return end
+		if not target or not plr or not plr.Character then return end
 		source = _G.AIMBOT_FireSource()
 		if not source then return end
 		for k,v in ipairs(_G.AIMBOT_GetCastParts(target)) do
