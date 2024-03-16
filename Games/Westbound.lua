@@ -14,6 +14,7 @@ function module.Init(category, connections)
 	
 	local sharedModules = ReplicatedStorage:WaitForChild("SharedModules")
 	local generalEvents = ReplicatedStorage:WaitForChild("GeneralEvents")
+	local gunScripts = ReplicatedStorage:WaitForChild("GunScripts")
 	
 	local animals = game.Workspace:WaitForChild("Animals")
 	local horses = game.Workspace:WaitForChild("Horses")
@@ -137,15 +138,6 @@ function module.Init(category, connections)
 		
 		_G.AIMBOT_AimFunc = nil
 		
-		local gunScripts = ReplicatedStorage:WaitForChild("GunScripts")
-		for gunName,gunData in pairs(require(gunScripts:WaitForChild("GunStats"))) do
-			gunData.AutoFire = true
-			gunData.ReloadSpeed = 0.1
-			gunData.Spread = 0
-			gunData.FullReload = true
-			gunData.MaxShots = 1000
-		end
-		
 		-- TODO: !!! BOW !!!
 
 		local gunLocalModule = require(gunScripts:WaitForChild("GunLocalModule"))
@@ -162,6 +154,14 @@ function module.Init(category, connections)
 			if shotInfo.BulletOwner == plr then
 				if _G.AIMBOT_CurrentTarget then
 					shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, _G.AIMBOT_CurrentTarget.Position)
+				else
+					local mouseRay = game.Workspace.CurrentCamera:ScreenPointToRay(mouse.X, mouse.Y)
+					local raycastHit = _G.AIMBOT_Raycast(mouseRay.Origin, mouseRay.Direction * 1000)
+					if raycastHit then
+						shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, raycastHit.Position)
+					else
+						shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, mouse.Hit.Position)
+					end
 				end
 				if shotInfo.GunType and shotInfo.GunType == "Bow" then
 					shotInfo.Speed = 20
@@ -196,7 +196,7 @@ function module.Init(category, connections)
 			local function mouseAim()
 				equipped = true
 				while task.wait() and equipped and module.On do
-					if _G.AimbotModule.Enabled and plr.Character and plr.Character.PrimaryPart then
+					if plr.Character and plr.Character.PrimaryPart then
 						if _G.AIMBOT_CurrentTarget then
 							plr.Character.PrimaryPart.CFrame = CFrame.new(plr.Character.PrimaryPart.Position, Vector3.new(_G.AIMBOT_CurrentTarget.Position.X, plr.Character.PrimaryPart.Position.Y, _G.AIMBOT_CurrentTarget.Position.Z))
 						else
@@ -296,7 +296,7 @@ function module.Init(category, connections)
 	
 	-- auto-skin
 	task.spawn(function()
-		while task.wait(.5) and module.On do
+		while task.wait(.3) and module.On do
 			for animal, data in pairs(animalsList) do
 				if #PlayerInventory:GetChildren() >= inventoryLimit.Value then break end
 				if data and data.Humanoid and data.Humanoid.Health <= 0 and data.Humanoid.RootPart and
@@ -409,7 +409,7 @@ function module.Init(category, connections)
 		end)
 	end
 	
-	do -- auto-trash
+	do -- auto-trash & throw all
 		local autoTrash
 		local throwAll
 		
@@ -421,8 +421,8 @@ function module.Init(category, connections)
 			end
 		end
 		
-		throwAll = category:AddCheckbox("Trash all")
-		autoTrash = category:AddCheckbox("Auto-trash", function(state) autoTrash.Inline = state throwAll:SetVisible(state) end)
+		autoTrash = category:AddCheckbox("Auto-trash")
+		throwAll = category:AddCheckbox("Throw all")
 		autoTrash:SetChecked(true)
 		autoTrash.Inline = true
 		
@@ -435,7 +435,7 @@ function module.Init(category, connections)
 	
 	do -- auto-free
 		local freeYourselfConn
-		category:AddCheckbox("Auto-free", function(state)
+		local autoFree = category:AddCheckbox("Auto-free", function(state)
 			if state then
 				GeneralEvents.LassoEvents:FireServer("BreakFree")
 				freeYourselfConn = lassod.Changed:Connect(function()
@@ -450,7 +450,26 @@ function module.Init(category, connections)
 			else
 				if freeYourselfConn then freeYourselfConn:Disconnect() end
 			end
-		end):SetChecked(true)
+		end)
+		autoFree.Inline = true
+		autoFree:SetChecked(true)
+	end
+	
+	do -- superweapons
+		for gunName,gunData in pairs(require(gunScripts:WaitForChild("GunStats"))) do
+			gunData.AutoFire = true
+			gunData.ReloadSpeed = 0.1
+			gunData.equipTime = 0
+			gunData.Spread = 0
+			gunData.FullReload = true
+			gunData.MaxShots = 1000
+		end
+		
+		local superWeapons = category:AddCheckbox("SuperWeapons", function(state)
+			for gunName,gunData in pairs(require(gunScripts:WaitForChild("GunStats"))) do
+				gunData.prepTime = state and 0.05 or 0.3
+			end
+		end)
 	end
 	
 	do -- misc

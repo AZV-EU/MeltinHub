@@ -172,12 +172,13 @@ function module.SetEnabled(state)
 			_G.AIMBOT_CurrentTarget = nil
 		end)
 	elseif not state and module.Enabled then
+		RunService:UnbindFromRenderStep("_mh_ab")
+		task.wait()
 		fovCirc.Visible = false
 		fovLine.Visible = false
 		fovCirc:Remove()
 		fovLine:Remove()
 		_G.AIMBOT_CurrentTarget = nil
-		RunService:UnbindFromRenderStep("_mh_ab")
 	end
 	module.Enabled = state
 end
