@@ -179,8 +179,11 @@ function module.SetEnabled(state)
 			else
 				resetFlight()
 			end
-		end, true, Enum.KeyCode.LeftControl, Enum.KeyCode.ButtonR2)
-		ContextActionService:SetTitle("FlightToggle", "Fly")
+		end, UserInputService.TouchEnabled, Enum.KeyCode.LeftControl, Enum.KeyCode.ButtonR2)
+		if UserInputService.TouchEnabled then
+			ContextActionService:SetTitle("FlightToggle", "Fly")
+			ContextActionService:SetPosition("FlightToggle", UDim2.new(1, -150, 1, -100))
+		end
 		
 		local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
 		if human then
