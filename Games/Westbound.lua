@@ -410,17 +410,22 @@ function module.Init(category, connections)
 	end
 	
 	do -- auto-trash
-		local autoTrash = category:AddCheckbox("Auto-trash")
-		autoTrash:SetChecked(true)
-		autoTrash.Inline = true
+		local autoTrash
+		local throwAll
 		
 		local function filterTrash(item)
 			if not item or not item:IsA("IntValue") then return end
 			task.wait(.25)
-			if item.Value < 50 then
+			if autoTrash.Checked and (item.Value < 50 or throwAll.Checked) then
 				GeneralEvents.Inventory:InvokeServer("Drop", item)
 			end
 		end
+		
+		throwAll = Category:AddCheckbox("Trash all")
+		autoTrash = category:AddCheckbox("Auto-trash", function(state) autoTrash.Inline = state throwAll:SetVisible(state) end)
+		autoTrash:SetChecked(true)
+		autoTrash.Inline = true
+		
 		for _,item in pairs(PlayerInventory:GetChildren()) do
 			filterTrash(item)
 		end
