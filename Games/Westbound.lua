@@ -14,7 +14,103 @@ function module.Init(category, connections)
 	
 	local sharedModules = ReplicatedStorage:WaitForChild("SharedModules")
 	local generalEvents = ReplicatedStorage:WaitForChild("GeneralEvents")
+	
 	local gunScripts = ReplicatedStorage:WaitForChild("GunScripts")
+	local gunLocalModule = gunScripts:WaitForChild("GunLocalModule")
+	local GLM = require(gunLocalModule)
+	
+	do -- curentGunData snapshot for reference
+		--[[
+		{
+			Humanoid = game.Workspace.RBChancelor.Humanoid,
+			TotalAmmo = game.Players.RBChancelor.PlayerGui.AmmoHud.Frame.ImageLabel.Total,
+			Tool = game.Workspace.RBChancelor["Winter's Bounty"],
+			AmmoType = "SniperAmmo",
+			CurrentAmmo = game.Players.RBChancelor.PlayerGui.AmmoHud.Frame.ImageLabel.Current,
+			Mobile = {
+				RemoveFireButton = function RemoveFireButton() end,
+				SetUpFireButton = function SetUpFireButton() end,
+				RaycastScreenCenter = function RaycastScreenCenter() end,
+				IsInputEnded = function IsInputEnded() end,
+				ToggleAimIcon = function ToggleAimIcon() end
+			},
+			Mouse = Instance,
+			unequipConnection = RBXScriptConnection.new(Connection),
+			shotDebounce = false,
+			reloading = false,
+			AmmoVal = game.Players.RBChancelor.Consumables.SniperAmmo,
+			Character = game.Workspace.RBChancelor,
+			Root = game.Workspace.RBChancelor.HumanoidRootPart,
+			TotalAmmoClient = 186,
+			walkStateChanged = RBXScriptConnection.new(Connection),
+			Equipped = true,
+			ImageLabel = game.Players.RBChancelor.PlayerGui.AmmoHud.Frame.ImageLabel,
+			Animations = {
+				Zoom = Animation,
+				Hold = Animation,
+				Equip = Animation,
+				Fire = Animation,
+				Idle = Animation,
+				Reload = Animation
+			},
+			Firing = false,
+			cancelReloading = false,
+			isVibrationSupported = true,
+			NewAmmoGui = game.Players.RBChancelor.PlayerGui.AmmoHud,
+			humanoidDied = RBXScriptConnection.new(Connection),
+			Sounds = {
+				CloseLever = game.Workspace.RBChancelor["Winter's Bounty"].Handle.CloseLever,
+				Prep = game.Workspace.RBChancelor["Winter's Bounty"].Handle.Prep,
+				Empty = game.Workspace.RBChancelor["Winter's Bounty"].Handle.Empty,
+				Equip = game.Workspace.RBChancelor["Winter's Bounty"].Handle.Equip,
+				Fire = game.Workspace.RBChancelor["Winter's Bounty"].Handle.Fire,
+				OpenLever = game.Workspace.RBChancelor["Winter's Bounty"].Handle.OpenLever,
+				Reload = game.Workspace.RBChancelor["Winter's Bounty"].Handle.Reload
+			},
+			AmmoChangedConnection = RBXScriptConnection.new(Connection),
+			Handle = game.Workspace.RBChancelor["Winter's Bounty"].Handle,
+			zooming = false,
+			GunInfo = {
+				Sounds = "loopback -> table:10",
+				Tool = game.Workspace.RBChancelor["Winter's Bounty"],
+				GunStats = {
+					camShakeResist = 250,
+					FullReload = true,
+					AutoFire = true,
+					ReloadSpeed = 0.1,
+					BulletSpeed = 120,
+					MaxShots = 1000,
+					InstantFireAnimation = true,
+					ForceZoom = false,
+					FiringOffset = CFrame.new(-2.70000005, 0.300000012, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1),
+					prepTime = 0.05,
+					GunType = "Sniper",
+					Spread = 0,
+					Damage = 75,
+					EquipDelay = 0.3,
+					ZoomMouseSpeed = 0.07,
+					Scope = game.Players.RBChancelor.PlayerGui.Scope.Scope,
+					FireAnimationType = "RifleZoom",
+					ZoomAccuracy = 0,
+					equipTime = 0,
+					toolIdleAnimationType = "Rifle",
+					ScopeGui = game.Players.RBChancelor.PlayerGui.Scope,
+					ZoomFOVSpeed = 5,
+					ZoomFOV = 10,
+					toolZoomAnimationType = "RifleZoom",
+					AmmoName = "SniperAmmo",
+					ReloadAnimationSpeed = 1,
+					HipFireAccuracy = 20
+				}
+			},
+			GunStats = "loopback -> table:12",
+			PlayAnimation = function PlayAnimation() end,
+			Shots = 1000,
+			reloadManual = false,
+			NewFrame = game.Players.RBChancelor.PlayerGui.AmmoHud.Frame
+		}
+		]]
+	end
 	
 	local animals = game.Workspace:WaitForChild("Animals")
 	local horses = game.Workspace:WaitForChild("Horses")
@@ -139,10 +235,9 @@ function module.Init(category, connections)
 		_G.AIMBOT_AimFunc = nil
 		
 		-- TODO: !!! BOW !!!
-
-		local gunLocalModule = require(gunScripts:WaitForChild("GunLocalModule"))
-		_G.GLM_Fire_ORIG = gunLocalModule.Fire
-		gunLocalModule.Fire = function(...)
+		
+		_G.GLM_Fire_ORIG = GLM.Fire
+		GLM.Fire = function(...)
 			if not _G.AimbotModule.Enabled or _G.AIMBOT_CurrentTarget then
 				_G.GLM_Fire_ORIG(...)
 			end
@@ -188,13 +283,31 @@ function module.Init(category, connections)
 	end
 	
 	local hijackedTools = {}
+	local weaponsData = {}
 	local function hijackTool(tool)
 		if tool:IsA("Tool") and not hijackedTools[tool] then
 			hijackedTools[tool] = true
 			
 			local equipped = false
-			local function mouseAim()
+			local function OnEquipped()
 				equipped = true
+				
+				--[[
+				if not weaponsData[tool] then
+					for _,func in pairs(getfunctions(gunLocalModule)) do
+						local gunTbl = getupvalue(func, 1)
+						if gunTbl and type(gunTbl) == "table" and gunTbl.Tool and gunTbl.Tool == tool then
+							weaponsData[tool] = gunTbl
+							break
+						end
+					end
+				end
+				
+				local weaponData = weaponsData[tool]
+				if weaponData then
+					firesignal(weaponData.AmmoVal.Changed)
+				end]]
+				
 				while task.wait() and equipped and module.On do
 					if plr.Character and plr.Character.PrimaryPart then
 						if _G.AIMBOT_CurrentTarget then
@@ -206,10 +319,10 @@ function module.Init(category, connections)
 				end
 			end
 			if plr.Character and plr.Character.Parent and tool.Parent == plr.Character then
-				task.spawn(mouseAim)
+				task.spawn(OnEquipped)
 			end
 			
-			table.insert(connections, tool.Equipped:Connect(mouseAim))
+			table.insert(connections, tool.Equipped:Connect(OnEquipped))
 			table.insert(connections, tool.Unequipped:Connect(function()
 				equipped = false
 			end))
@@ -237,6 +350,7 @@ function module.Init(category, connections)
 		local charLocal = chr:WaitForChild("CharacterLocal")
 		task.wait(1)
 		_G.DisableConnections(human.Jumping)
+		_G.DisableConnections(human.Died)
 		hijackedTools = {}
 		for k,v in pairs(plr.Backpack:GetChildren()) do
 			hijackTool(v)
@@ -460,6 +574,7 @@ function module.Init(category, connections)
 			gunData.AutoFire = true
 			gunData.ReloadSpeed = 0.1
 			gunData.equipTime = 0
+			gunData.EquipDelay = 0
 			gunData.Spread = 0
 			gunData.FullReload = true
 			gunData.MaxShots = 1000
@@ -605,6 +720,24 @@ function module.Init(category, connections)
 		
 		do -- autohopping
 			local category = _G.SenHub:AddCategory("Auto-farm")
+			
+			local autoSell
+			autoSell = category:AddCheckbox("Auto-sell", function(state)
+				if state then
+					task.spawn(function()
+						while task.wait(.25) and autoSell.Checked and module.On do
+							for _,store in pairs(shops:GetChildren()) do
+								if store:IsA("Model") and store.PrimaryPart and plr:DistanceFromCharacter(store.PrimaryPart.Position) <= 15 then
+									GeneralEvents.Inventory:InvokeServer("Sell")
+									break
+								end
+							end
+						end
+					end)
+				end
+			end)
+			autoSell:SetChecked(true)
+			
 			local hopLocation = category:AddDropdown("Location", {"Fort Arthur", "Grayridge Bank"}, 1)
 			local locations = {
 				[1] = (game.Workspace.FortArthurSpawn1.CFrame * CFrame.new(0, 3, 0)).Position,
@@ -680,10 +813,12 @@ function module.Shutdown()
 				gunLocalModule.Fire = _G.GLM_Fire_ORIG
 				_G.GLM_Fire_ORIG = nil
 			end
+			--[[
 			if _G.GLM_CycleZoom_ORIG then
 				gunLocalModule.cycleZoom = _G.GLM_CycleZoom_ORIG
 				_G.GLM_CycleZoom_ORIG = nil
 			end
+			]]
 		end
 		local createShot = require(gunScripts:FindFirstChild("CreateShot"))
 		if createShot then

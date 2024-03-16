@@ -1,4 +1,4 @@
-local Version = "1.10.1f"
+local Version = "1.10.1g"
 _G.MeltinENV = 0
 -- ENVIRONMENT: 0 = public, 1 = dev (local)
 
@@ -201,8 +201,16 @@ function _G.Stringify(obj, no_quotas)
 		return tostring(obj)
 	elseif type(obj) == "function" then
 		local funcInfo = getinfo(obj)
-		if funcInfo and funcInfo.name ~= "" then
-			return _G.Stringify(string.format("function %s() end", funcInfo.name), true)
+		if funcInfo then
+			if funcInfo.name ~= "" then
+				local args = {}
+				for i = 1, funcInfo.numparams do
+					table.insert(args, "a" .. tostring(i))
+				end
+				return _G.Stringify(string.format("function %s(%s) end", funcInfo.name, table.concat(args, ", ")), true)
+			else
+				return _G.Stringify(string.format("function: %s (%d args)", funcInfo.name, funcInfo.numparams), no_quotas)
+			end
 		end
 	elseif type(obj) == "userdata" and typeof(obj) ~= "EnumItem" then
 		if typeof(obj) ~= "Instance" then
