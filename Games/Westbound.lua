@@ -1,6 +1,5 @@
 local module = {
-	GameName = "Westbound",
-	ModuleVersion = "1.0"
+	On = false
 }
 
 local hopping = false
@@ -186,18 +185,18 @@ function module.Init(category, connections)
 	end)
 	
 	_G.ESPModule_Database.Storages["Enemies"].Rule = function(target)
-		if target:IsA("Player") and plr.Team and target.Team
-			and target.Team.Name ~= "Civilians" and
-			(plr.Team.Name == "Outlaws" or _G.ESPModule_GetTeam(target) ~= _G.ESPModule_GetTeam(plr)) then
+		if target:IsA("Player") and target.Team and target.Team.Name == "Outlaws" then
 			return true
 		end
 		return false
 	end
 	
-	_G.ESPModule_Database.Storages["Allies"].Rule = function(target)
-		if target:IsA("Player") and plr.Team and target.Team
-			and (target.Team.Name == "Civilians" or
-			(plr.Team.Name == "Cowboys" and _G.ESPModule_GetTeam(target) == _G.ESPModule_GetTeam(plr))) then
+	_G.ESPModule_Create("Cowboys", Color3.new(1, 1, 0), function(target)
+		return target:IsA("Player") and target.Team and target.Team.Name == "Cowboys"
+	end)
+	
+	_G.ESPModule_Database.Storages["Neutral"].Rule = function(target)
+		if target:IsA("Player") and target.Team and target.Team.Name == "Civilians" then
 			return true
 		end
 		return false
@@ -224,9 +223,10 @@ function module.Init(category, connections)
 			_G.AIMBOT_GetTargets = function()
 				targets = animals:GetChildren()
 				for _,v in pairs(game.Players:GetPlayers()) do
-					if v ~= plr and v.Character and v.Character.Parent and not plr:IsFriendsWith(v.UserId) and
-						_G.ESPModule_Database.Storages["Enemies"].Rule(v) then
-						table.insert(targets, v.Character)
+					if v ~= plr and v.Character and v.Character.Parent and not plr:IsFriendsWith(v.UserId) then
+						if plr.Team and v.Team and ((plr.Team.Name == "Outlaws" and v.Team.Name ~= "Civilians") or (plr.Team.Name == "Cowboys" and v.Team.Name == "Outlaws")) then
+							table.insert(targets, v.Character)
+						end
 					end
 				end
 				return targets

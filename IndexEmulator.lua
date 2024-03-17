@@ -50,7 +50,7 @@ function emulator:Reset()
 end
 
 local Hook
-Hook = hookmetamethod(game, "__index", function(Self, Key)
+Hook = hookmetamethod(game, "__index", newcclosure(function(Self, Key)
     if not checkcaller() then
 		if ETable[Self] then
 			if ETable[Self].Keys[Key] then
@@ -66,6 +66,6 @@ Hook = hookmetamethod(game, "__index", function(Self, Key)
     end
 
     return Hook(Self, Key)
-end)
+end))
 
 return emulator

@@ -50,7 +50,6 @@ local customPhysicalPropsDb = {}
 local resetConn
 function module.SetFling(state)
 	if state and not module.Fling then
-		module.Fling = true
 		if plr and plr.Character then
 			local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
 			if human and human.RootPart and human.RootPart.Parent then
@@ -82,6 +81,7 @@ function module.SetFling(state)
 					module.SetFling(false)
 					resetConn = nil
 				end)
+				module.Fling = true
 			end
 		end
 	elseif not state and module.Fling then
@@ -121,78 +121,82 @@ function module.SetFling(state)
 end
 
 function module.SetEnabled(state)
-	if state and not module.Enabled and plr.Character then
+	if state and not module.Enabled then
 		module.Enabled = true
-		ContextActionService:BindAction("FlightToggle", function(_, inputState)
-			if not plr.Character or not plr.Character.Parent then return end
-			local myChar = plr.Character
-			local myHuman = myChar:FindFirstChildWhichIsA("Humanoid")
-			if not myHuman then return end
-			if myHuman.Health == 0 then return end
-			if inputState ~= Enum.UserInputState.Begin then return end
-			
-			flying = not flying
-			
-			if flying and myHuman ~= nil and myHuman.RootPart ~= nil and myHuman.RootPart.Parent ~= nil then
-				local root = myHuman.RootPart
-				targetPos = root.Position
+		task.spawn(function()
+			repeat task.wait() until plr.Character or not module.Enabled
+			if not module.Enabled then return end
+			ContextActionService:BindAction("FlightToggle", function(_, inputState)
+				if not plr.Character or not plr.Character.Parent then return end
+				local myChar = plr.Character
+				local myHuman = myChar:FindFirstChildWhichIsA("Humanoid")
+				if not myHuman then return end
+				if myHuman.Health == 0 then return end
+				if inputState ~= Enum.UserInputState.Begin then return end
 				
-				local ControlModule
-				if plr:FindFirstChild("PlayerScripts") and plr.PlayerScripts:FindFirstChild("PlayerModule") and plr.PlayerScripts.PlayerModule:FindFirstChild("ControlModule") then
-					ControlModule = require(plr.PlayerScripts.PlayerModule.ControlModule)
-				end
+				flying = not flying
 				
-				RunService:BindToRenderStep("flight", Enum.RenderPriority.Camera.Value - 1, function(dt)
-					cam = game.Workspace.CurrentCamera
-					root = myHuman.RootPart
-					if root ~= nil then
-						root.AssemblyLinearVelocity  = Vector3.zero
-						root.AssemblyAngularVelocity = Vector3.zero
-						moveShift = Vector3.zero
-						
-						speed = UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) and module.BoostSpeed or normalSpeed
-						
-						if ControlModule then
-							moveShift = ControlModule:GetMoveVector() * speed
-						else
-							moveShift = human.MoveDirection * speed
-						end
-						if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-							moveShift += Vector3.new(0, speed, 0)
-						end
-						
-						targetPos = (CFrame.new(targetPos, targetPos + cam.CFrame.LookVector) * CFrame.new(moveShift * dt)).Position
-						
-						root.CFrame = CFrame.new(targetPos, targetPos + cam.CFrame.LookVector)
-						
-						if module.Fling then
-							for k,v in pairs(plr.Character:GetChildren()) do
-								if v:IsA("BasePart") then
-									v.CanCollide = false
-									v.AssemblyLinearVelocity  = Vector3.zero
-									v.AssemblyAngularVelocity = Vector3.zero
-								end
-							end
-							root.CFrame = CFrame.new(targetPos, targetPos + cam.CFrame.LookVector)
-						end
+				if flying and myHuman ~= nil and myHuman.RootPart ~= nil and myHuman.RootPart.Parent ~= nil then
+					local root = myHuman.RootPart
+					targetPos = root.Position
+					
+					local ControlModule
+					if plr:FindFirstChild("PlayerScripts") and plr.PlayerScripts:FindFirstChild("PlayerModule") and plr.PlayerScripts.PlayerModule:FindFirstChild("ControlModule") then
+						ControlModule = require(plr.PlayerScripts.PlayerModule.ControlModule)
 					end
-				end)
-			else
-				resetFlight()
+					
+					RunService:BindToRenderStep("flight", Enum.RenderPriority.Camera.Value - 1, function(dt)
+						cam = game.Workspace.CurrentCamera
+						root = myHuman.RootPart
+						if root ~= nil then
+							root.AssemblyLinearVelocity  = Vector3.zero
+							root.AssemblyAngularVelocity = Vector3.zero
+							moveShift = Vector3.zero
+							
+							speed = UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) and module.BoostSpeed or normalSpeed
+							
+							if ControlModule then
+								moveShift = ControlModule:GetMoveVector() * speed
+							else
+								moveShift = human.MoveDirection * speed
+							end
+							if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+								moveShift += Vector3.new(0, speed, 0)
+							end
+							
+							targetPos = (CFrame.new(targetPos, targetPos + cam.CFrame.LookVector) * CFrame.new(moveShift * dt)).Position
+							
+							root.CFrame = CFrame.new(targetPos, targetPos + cam.CFrame.LookVector)
+							
+							if module.Fling then
+								for k,v in pairs(plr.Character:GetChildren()) do
+									if v:IsA("BasePart") then
+										v.CanCollide = false
+										v.AssemblyLinearVelocity  = Vector3.zero
+										v.AssemblyAngularVelocity = Vector3.zero
+									end
+								end
+								root.CFrame = CFrame.new(targetPos, targetPos + cam.CFrame.LookVector)
+							end
+						end
+					end)
+				else
+					resetFlight()
+				end
+			end, UserInputService.TouchEnabled, Enum.KeyCode.LeftControl, Enum.KeyCode.ButtonR2)
+			if UserInputService.TouchEnabled then
+				ContextActionService:SetTitle("FlightToggle", "Fly")
+				ContextActionService:SetPosition("FlightToggle", UDim2.new(1, -150, 1, -100))
 			end
-		end, UserInputService.TouchEnabled, Enum.KeyCode.LeftControl, Enum.KeyCode.ButtonR2)
-		if UserInputService.TouchEnabled then
-			ContextActionService:SetTitle("FlightToggle", "Fly")
-			ContextActionService:SetPosition("FlightToggle", UDim2.new(1, -150, 1, -100))
-		end
-		
-		local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
-		if human then
-			respawnConn = human.Died:Once(function()
-				resetFlight()
-				respawnConn = nil
-			end)
-		end
+			
+			local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
+			if human then
+				respawnConn = human.Died:Once(function()
+					resetFlight()
+					respawnConn = nil
+				end)
+			end
+		end)
 	elseif not state and module.Enabled then
 		module.Enabled = false
 		module.SetFling(false)

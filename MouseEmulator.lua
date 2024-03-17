@@ -36,7 +36,7 @@ local plr = game.Players.LocalPlayer
 local mouse = plr:GetMouse()
 
 local Hook
-Hook = hookmetamethod(mouse, "__index", function(Self, Key)
+Hook = hookmetamethod(mouse, "__index", newcclosure(function(Self, Key)
     if not checkcaller() and Self == mouse and controlRequested then
         if Key == "Target" then
 			return emulatedPart
@@ -55,6 +55,6 @@ Hook = hookmetamethod(mouse, "__index", function(Self, Key)
     end
 
     return Hook(Self, Key)
-end)
+end))
 
 return emulator

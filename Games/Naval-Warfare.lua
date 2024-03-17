@@ -13,6 +13,15 @@ function module.Init(category, connections)
 		end
 	end
 	
+	for _,dock in pairs({game.Workspace:WaitForChild("USDock"), game.Workspace:WaitForChild("JapanDock")}) do
+		for k,v in pairs(dock:GetDescendants()) do
+			if v:IsA("BasePart") and not v:IsDescendantOf(dock.VehicleSP) then
+				v.CanTouch = false
+			end
+		end
+	end
+	:WaitForChild("MainBody").CanTouch = false
+	
 	for _,v in pairs(Setting:WaitForChild("SeaFloor"):GetChildren()) do
 		v.CanTouch = false
 	end
